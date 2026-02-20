@@ -22,16 +22,17 @@ window.INVITACION_CONFIG = {
   },
 
   event: {
-    start: "2026-08-22T21:00:00-05:30",
-    durationMinutes: 360,
+    start: "2026-08-23T00:00:00Z",
+    durationMinutes: 510,
     countdownEmbedUrl: "",
     whenTitle: "Cuándo",
     dayName: "Sábado",
-    dateLong: "22 de Agosto de 2026",
-    time: "21:00 hs",
+    dateLong: "22 y 23 de Agosto de 2026",
+    time: "00:00 hs",
     calendarTitle: "XV de Morella",
     calendarDescription: "Te espero para celebrar mis XV.",
     calendarLabel: "AGENDAR",
+    calendarUrl: "https://calendar.app.google/sE49UbfiyFgmAcH67",
   },
 
   venue: {
@@ -45,6 +46,7 @@ window.INVITACION_CONFIG = {
   rsvp: {
     title: "¿Venís?",
     text: "Esta fiesta no sería lo mismo sin vos, confirmá tu presencia.",
+    formUrl: "https://forms.gle/4v4fj9kVipCpLLNh6",
     whatsappUrl: "",
     buttonLabel: "CONFIRMAR",
   },
@@ -52,7 +54,7 @@ window.INVITACION_CONFIG = {
   menu: {
     title: "Menú especial",
     text: "Si tenés alguna condición con el menú, avisanos. Ej: celíaco, vegano, etc.",
-    whatsappUrl: "",
+    formUrl: "https://forms.gle/L3qrnpdpjmrpbR4V7",
     buttonLabel: "SÍ, TENGO",
   },
 
@@ -64,7 +66,7 @@ window.INVITACION_CONFIG = {
   playlist: {
     title: "Playlist",
     text: "Estamos armando la playlist de la fiesta. ¿Qué canción no puede faltar?",
-    whatsappUrl: "",
+    spotifyUrl: "https://open.spotify.com/playlist/3BDa5JGiPUM0lLATytcQKE?pt=d36312c5d3f2d7256f5f371563df9de9",
     buttonLabel: "SUGERIR CANCIÓN",
   },
 };
