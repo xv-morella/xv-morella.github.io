@@ -26,34 +26,39 @@
 
           <div class="card card--countdown">
             <div class="card__title" id="countdownTitle">Faltan</div>
-            <div class="countdown-embed" id="countdownEmbedWrap" style="display: none">
-              <iframe
-                id="countdownEmbed"
-                title="Countdown"
-                loading="lazy"
-                referrerpolicy="no-referrer-when-downgrade"
-                src=""
-                allowfullscreen
-              ></iframe>
-            </div>
-
-            <div class="countdown" id="countdown">
-              <div class="countdown__item">
-                <div class="countdown__num" id="cdDays">0</div>
-                <div class="countdown__label">Días</div>
-              </div>
-              <div class="countdown__item">
-                <div class="countdown__num" id="cdHours">0</div>
-                <div class="countdown__label">Hs</div>
-              </div>
-              <div class="countdown__item">
-                <div class="countdown__num" id="cdMins">0</div>
-                <div class="countdown__label">Min</div>
-              </div>
-              <div class="countdown__item">
-                <div class="countdown__num" id="cdSecs">0</div>
-                <div class="countdown__label">Seg</div>
-              </div>
+            <script>
+              (function (d, s, id) {
+                var js,
+                  pjs = d.getElementsByTagName(s)[0];
+                if (d.getElementById(id)) return;
+                js = d.createElement(s);
+                js.id = id;
+                js.src = "//www.tickcounter.com/static/js/loader.js";
+                pjs.parentNode.insertBefore(js, pjs);
+              })(document, "script", "tickcounter-sdk");
+            </script>
+            <div style="position: relative">
+              <a
+                data-type="countdown"
+                data-id="9492788"
+                class="tickcounter"
+                style="
+                  display: block;
+                  left: 0;
+                  width: 100%;
+                  height: 0;
+                  position: relative;
+                  padding-bottom: 25%;
+                  margin: 0 auto;
+                "
+                title="a"
+                href="//www.tickcounter.com/"
+                >a</a
+              >
+              <div
+                aria-hidden="true"
+                style="position: absolute; inset: 0; background: transparent; z-index: 5"
+              ></div>
             </div>
           </div>
         </div>
@@ -104,30 +109,12 @@
           <div class="container">
             <h2 class="section__title" id="rsvpTitle">¿Venís?</h2>
             <p class="section__text" id="rsvpText">Confirmá tu presencia.</p>
-            <form class="form" id="rsvpForm">
-              <label class="field">
-                <span class="field__label">Nombre</span>
-                <input class="field__input" id="rsvpName" name="name" type="text" autocomplete="name" required />
-              </label>
-
-              <fieldset class="field field--radio">
-                <legend class="field__label">Confirmación</legend>
-                <label class="radio">
-                  <input type="radio" name="status" value="SI" required />
-                  <span>Sí, voy</span>
-                </label>
-                <label class="radio">
-                  <input type="radio" name="status" value="NO" required />
-                  <span>No, no asisto</span>
-                </label>
-              </fieldset>
-
+            <div class="form">
               <div class="form__actions">
-                <button class="btn" type="submit">CONFIRMAR</button>
-                <button class="btn btn--ghost" type="button" id="exportRsvp">EXPORTAR RSVP</button>
+                <button class="btn" type="button" id="rsvpConfirm">CONFIRMAR</button>
               </div>
               <div class="form__status" id="rsvpStatus" aria-live="polite"></div>
-            </form>
+            </div>
           </div>
         </section>
 
@@ -135,23 +122,12 @@
           <div class="container">
             <h2 class="section__title" id="menuTitle">Menú especial</h2>
             <p class="section__text" id="menuText">Si tenés alguna condición con el menú, avisanos.</p>
-            <form class="form" id="menuForm">
-              <label class="field">
-                <span class="field__label">Nombre</span>
-                <input class="field__input" id="menuName" name="name" type="text" autocomplete="name" required />
-              </label>
-
-              <label class="field">
-                <span class="field__label">Detalle</span>
-                <textarea class="field__input field__input--area" id="menuDetail" name="detail" rows="4" required></textarea>
-              </label>
-
+            <div class="form">
               <div class="form__actions">
-                <button class="btn btn--ghost" type="submit">ENVIAR</button>
-                <button class="btn btn--ghost" type="button" id="exportMenu">EXPORTAR MENÚ</button>
+                <button class="btn btn--ghost" type="button" id="menuConfirm">SÍ, TENGO</button>
               </div>
               <div class="form__status" id="menuStatus" aria-live="polite"></div>
-            </form>
+            </div>
           </div>
         </section>
 
@@ -168,15 +144,16 @@
           <div class="container">
             <h2 class="section__title" id="playlistTitle">Playlist</h2>
             <p class="section__text" id="playlistText">¿Qué canción no puede faltar?</p>
-            <div class="center">
-              <a class="btn" id="playlistLink" href="#" target="_blank" rel="noopener noreferrer">SUGERIR CANCIÓN</a>
+            <div class="form">
+              <div class="form__actions">
+                <button class="btn btn--ghost" type="button" id="playlistSuggest">SUGERIR CANCIÓN</button>
+              </div>
             </div>
           </div>
         </section>
       </main>
 
       <footer class="footer">
-        <a class="footer__top" href="#top">Volver arriba</a>
       </footer>
     </div>
 
