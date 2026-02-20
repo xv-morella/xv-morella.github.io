@@ -18,7 +18,7 @@ window.INVITACION_CONFIG = {
   },
 
   sheets: {
-    webAppUrl: "https://script.google.com/macros/s/AKfycbwljQdZS6l75zoOvQekSMedTaB2OGT6ZXn77CeoVwKzGHVDnAQb3D_wNh_5qGKW9m4S/exec",
+    webAppUrl: "https://script.google.com/macros/s/AKfycbydYXEW4CrndIBdgSUOpV9M1JxmdQH2XBQcxV2A2SPdsytyQb-snzuGebE01zQZETA/exec",
   },
 
   event: {
