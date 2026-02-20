@@ -13,7 +13,7 @@ window.INVITACION_CONFIG = {
   },
 
   audio: {
-    url: "",
+    url: "music.mp3",
     autoplay: false,
   },
 
@@ -22,13 +22,13 @@ window.INVITACION_CONFIG = {
   },
 
   event: {
-    start: "2026-08-23T00:00:00Z",
+    start: "2026-08-22T21:00:00Z",
     durationMinutes: 510,
     countdownEmbedUrl: "",
-    whenTitle: "Cuándo",
+    whenTitle: "",
     dayName: "Sábado",
-    dateLong: "22 y 23 de Agosto de 2026",
-    time: "00:00 hs",
+    dateLong: "22 de Agosto de 2026",
+    time: "21:00 hs",
     calendarTitle: "XV de Morella",
     calendarDescription: "Te espero para celebrar mis XV.",
     calendarLabel: "AGENDAR",
@@ -36,11 +36,12 @@ window.INVITACION_CONFIG = {
   },
 
   venue: {
-    title: "Lugar de Celebración",
+    title: "Lugar de Festejo",
     name: "Lazaro Eventos",
     address: "Dorrego 486, Bahía Blanca",
     mapsUrl: "https://maps.app.goo.gl/GAWec2y21EVka4mS6?g_st=aw",
-    mapsEmbedUrl: "",
+    mapsEmbedUrl: "https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=Lazaro+Eventos,Dorrego+486,Bahia+Blanca&zoom=15&maptype=roadmap",
+    mapsLinkLabel: "Como llegar",
   },
 
   rsvp: {
@@ -68,5 +69,12 @@ window.INVITACION_CONFIG = {
     text: "Estamos armando la playlist de la fiesta. ¿Qué canción no puede faltar?",
     spotifyUrl: "https://open.spotify.com/playlist/3BDa5JGiPUM0lLATytcQKE?pt=d36312c5d3f2d7256f5f371563df9de9",
     buttonLabel: "SUGERIR CANCIÓN",
+  },
+
+  gift: {
+    emoji: "🎁",
+    title: "Regalo",
+    text: "Tu presencia es mi mejor regalo, pero si querés obsequiarme algo, te dejo mi alias.",
+    alias: "morella.2011",
   },
 };
