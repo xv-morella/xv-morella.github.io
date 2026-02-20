@@ -8,15 +8,15 @@
     <meta name="theme-color" content="#0b0b0d" />
   </head>
   <body>
+    <button class="audio audio--floating" type="button" id="audioToggle" aria-label="Reproducir música">
+      <span class="audio__icon" aria-hidden="true">♪</span>
+      <span class="audio__label" id="audioLabel">▶</span>
+    </button>
+
     <div class="page">
       <header class="hero" id="top">
         <div class="hero__bg" aria-hidden="true"></div>
         <div class="hero__overlay" aria-hidden="true"></div>
-
-        <button class="audio" type="button" id="audioToggle" aria-label="Reproducir música">
-          <span class="audio__icon" aria-hidden="true">♪</span>
-          <span class="audio__label" id="audioLabel">Música</span>
-        </button>
 
         <div class="hero__content">
           <div class="hero__kicker" id="heroKicker">MIS XV</div>
@@ -173,9 +173,129 @@
       </footer>
     </div>
 
-    <audio id="bgAudio" preload="none" crossorigin="anonymous"></audio>
+    <audio id="bgAudio" preload="auto" crossorigin="anonymous"></audio>
 
     <script src="config.js"></script>
+    <script>console.log('Config.js loaded');</script>
     <script src="app.js"></script>
+    <script>console.log('App.js file loaded');</script>
+    
+    <!-- Script de prueba para audio -->
+    <script>
+      console.log('🎵 SCRIPT DE PRUEBA INICIADO');
+      
+      // Esperar a que todo cargue
+      window.addEventListener('load', () => {
+        console.log('🎵 Window loaded');
+        
+        const toggle = document.getElementById('audioToggle');
+        const label = document.getElementById('audioLabel');
+        const audio = document.getElementById('bgAudio');
+        
+        console.log('🎵 Elementos encontrados:');
+        console.log('- toggle:', toggle);
+        console.log('- label:', label);
+        console.log('- audio:', audio);
+        
+        if (!toggle || !label || !audio) {
+          console.error('❌ NO SE ENCONTRARON LOS ELEMENTOS');
+          return;
+        }
+        
+        let playing = false;
+        let audioInitialized = false;
+        
+        const updateButton = () => {
+          // Aplicar transición difuminada
+          toggle.style.transition = 'all 0.3s ease';
+          label.style.transition = 'all 0.3s ease';
+          
+          if (playing) {
+            label.textContent = '❚❚';
+            toggle.style.background = 'rgba(0, 255, 0, 0.5)';
+            toggle.style.transform = 'scale(1.05)';
+            toggle.style.boxShadow = '0 8px 25px rgba(0, 255, 0, 0.3)';
+            console.log('🎵 Botón en PAUSA');
+          } else {
+            label.textContent = '▶';
+            toggle.style.background = 'rgba(255, 0, 0, 0.5)';
+            toggle.style.transform = 'scale(1)';
+            toggle.style.boxShadow = '0 8px 25px rgba(255, 0, 0, 0.3)';
+            console.log('🎵 Botón en PLAY');
+          }
+        };
+        
+        const initializeAudio = () => {
+          if (!audioInitialized && window.INVITACION_CONFIG?.audio?.url) {
+            console.log('🎵 Inicializando audio...');
+            audio.src = window.INVITACION_CONFIG.audio.url;
+            audio.loop = true;
+            audio.volume = 0.7;
+            audioInitialized = true;
+            
+            // Event listeners para mejor control
+            audio.addEventListener('play', () => {
+              console.log('🎵 Audio event: play');
+            });
+            
+            audio.addEventListener('pause', () => {
+              console.log('🎵 Audio event: pause');
+            });
+            
+            audio.addEventListener('ended', () => {
+              console.log('🎵 Audio event: ended');
+            });
+            
+            audio.addEventListener('error', (e) => {
+              console.error('❌ Audio error:', e);
+            });
+          }
+        };
+        
+        toggle.addEventListener('click', (e) => {
+          console.log('🎵 ¡BOTÓN CLICKEADO!', e);
+          
+          if (!window.INVITACION_CONFIG?.audio?.url) {
+            console.error('❌ NO HAY URL DE AUDIO');
+            alert('❌ No hay URL de audio configurada');
+            return;
+          }
+          
+          // Inicializar audio si no está hecho
+          initializeAudio();
+          
+          if (playing) {
+            console.log('🎵 PAUSANDO...');
+            audio.pause();
+            playing = false;
+          } else {
+            console.log('🎵 REPRODUCIENDO...');
+            
+            audio.play().then(() => {
+              console.log('✅ AUDIO REPRODUCIÉNDOSE');
+              console.log('🎵 Current time:', audio.currentTime);
+              playing = true;
+            }).catch(error => {
+              console.error('❌ ERROR AL REPRODUCIR:', error);
+              if (error.name === 'NotAllowedError') {
+                alert('🔒 Haz clic en el botón para reproducir música (bloqueado por el navegador)');
+              } else {
+                alert('❌ Error al reproducir: ' + error.message);
+              }
+            });
+          }
+          
+          updateButton();
+        });
+        
+        // Estilos adicionales para el botón
+        toggle.style.cursor = 'pointer';
+        toggle.style.transition = 'all 0.3s ease';
+        
+        // Inicializar botón
+        updateButton();
+        console.log('🎵 SCRIPT DE PRUEBA COMPLETO');
+      });
+    </script>
   </body>
 </html>
