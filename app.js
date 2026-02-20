@@ -233,6 +233,9 @@
 
   if (cfg.venue?.mapsUrl) {
     $("mapsLink").href = cfg.venue.mapsUrl;
+    if (cfg.venue?.mapsLinkLabel) {
+      $("mapsLink").textContent = cfg.venue.mapsLinkLabel;
+    }
   } else {
     $("mapsLink").style.display = "none";
   }
@@ -272,12 +275,30 @@
   if (cfg.playlist?.title) $("playlistTitle").textContent = cfg.playlist.title;
   if (cfg.playlist?.text) $("playlistText").textContent = cfg.playlist.text;
 
-  const playlistSuggest = $("playlistSuggest");
-  if (playlistSuggest) {
-    playlistSuggest.addEventListener("click", () => {
-      const spotifyUrl = cfg.playlist?.spotifyUrl;
-      if (!spotifyUrl) return;
-      window.open(spotifyUrl, "_blank", "noopener,noreferrer");
+  if (cfg.playlist?.spotifyUrl) {
+    const playlistBtn = $("playlistSuggest");
+    if (playlistBtn) {
+      playlistBtn.addEventListener("click", () => {
+        window.open(cfg.playlist.spotifyUrl, "_blank", "noopener,noreferrer");
+      });
+    }
+  }
+
+  // Gift section
+  if (cfg.gift?.title) $("giftTitle").textContent = cfg.gift.title;
+  if (cfg.gift?.text) $("giftText").textContent = cfg.gift.text;
+  if (cfg.gift?.alias) $("giftAlias").textContent = cfg.gift.alias;
+
+  const giftAlias = $("giftAlias");
+  if (giftAlias) {
+    giftAlias.addEventListener("click", () => {
+      navigator.clipboard.writeText(cfg.gift?.alias || "").then(() => {
+        const original = giftAlias.textContent;
+        giftAlias.textContent = "¡Copiado!";
+        setTimeout(() => {
+          giftAlias.textContent = original;
+        }, 1500);
+      });
     });
   }
 
@@ -289,13 +310,11 @@
   if (rsvpConfirm) {
     rsvpConfirm.addEventListener("click", () => {
       const formUrl = cfg.rsvp?.formUrl;
-      if (rsvpStatus) rsvpStatus.textContent = "Abriendo formulario...";
       if (!formUrl) {
         if (rsvpStatus) rsvpStatus.textContent = "Falta configurar el link del formulario.";
         return;
       }
       window.open(formUrl, "_blank", "noopener,noreferrer");
-      if (rsvpStatus) rsvpStatus.textContent = "Se abrió el formulario para confirmar.";
     });
   }
 
@@ -304,13 +323,11 @@
   if (menuConfirm) {
     menuConfirm.addEventListener("click", () => {
       const formUrl = cfg.menu?.formUrl;
-      if (menuStatus) menuStatus.textContent = "Abriendo formulario...";
       if (!formUrl) {
         if (menuStatus) menuStatus.textContent = "Falta configurar el link del formulario.";
         return;
       }
       window.open(formUrl, "_blank", "noopener,noreferrer");
-      if (menuStatus) menuStatus.textContent = "Se abrió el formulario para avisar.";
     });
   }
 
