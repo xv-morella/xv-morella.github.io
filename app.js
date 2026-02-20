@@ -1,6 +1,13 @@
 (function () {
+  console.log('App.js script loaded');
+  
   const cfg = window.INVITACION_CONFIG;
-  if (!cfg) return;
+  if (!cfg) {
+    console.error('INVITACION_CONFIG not found');
+    return;
+  }
+  
+  console.log('Config loaded:', cfg);
 
   const $ = (id) => document.getElementById(id);
 
@@ -379,27 +386,145 @@
 
   const setLabel = () => {
     if (!label) return;
-    label.textContent = playing ? "Pausar" : "Música";
+    if (playing) {
+      label.textContent = "❚❚";
+      toggle.style.background = "rgba(0, 255, 0, 0.3)";
+    } else {
+      label.textContent = "▶";
+      toggle.style.background = "rgba(255, 0, 0, 0.3)";
+    }
+  };
+
+  // Función para detectar si realmente está sonando
+  const checkAudioPlaying = () => {
+    if (!audio) return false;
+    
+    const isActuallyPlaying = !audio.paused && 
+                             audio.readyState > 2 && 
+                             audio.currentTime > 0;
+    
+    console.log('Audio state check:', {
+      paused: audio.paused,
+      readyState: audio.readyState,
+      currentTime: audio.currentTime,
+      actuallyPlaying: isActuallyPlaying
+    });
+    
+    return isActuallyPlaying;
+  };
+
+  // Actualizar estado periódicamente
+  const updateAudioStatus = () => {
+    const actuallyPlaying = checkAudioPlaying();
+    if (actuallyPlaying !== playing) {
+      console.log('Audio state mismatch detected!');
+      playing = actuallyPlaying;
+      setLabel();
+    }
   };
 
   const ensureAudio = () => {
     if (!audio || ready) return;
     const url = cfg.audio?.url;
     if (!url) return;
+    
+    console.log('Setting audio src to:', url);
     audio.src = url;
     audio.loop = true;
-    ready = true;
+    audio.volume = 0.7;
+    audio.crossOrigin = "anonymous"; // Intentar evitar problemas de CORS
+    
+    // Add event listeners for better error handling
+    audio.addEventListener('canplaythrough', () => {
+      ready = true;
+      console.log('Audio ready to play');
+    });
+    
+    audio.addEventListener('error', (e) => {
+      console.error('Audio error:', e);
+      console.error('Audio error code:', audio.error ? audio.error.code : 'unknown');
+      console.error('Audio error message:', audio.error ? audio.error.message : 'unknown');
+      console.error('Audio network state:', audio.networkState);
+      console.error('Audio ready state:', audio.readyState);
+      if (label) label.textContent = "❚❚";
+    });
+    
+    audio.addEventListener('loadstart', () => {
+      console.log('Audio loading started');
+    });
+    
+    audio.addEventListener('loadeddata', () => {
+      console.log('Audio data loaded');
+    });
+    
+    audio.addEventListener('stalled', () => {
+      console.log('Audio loading stalled');
+    });
+    
+    audio.addEventListener('suspend', () => {
+      console.log('Audio loading suspended');
+    });
   };
 
   const play = async () => {
     ensureAudio();
-    if (!audio || !ready) return;
+    if (!audio) return;
+    
+    console.log('=== ATTEMPTING TO PLAY AUDIO ===');
+    console.log('Audio src:', audio.src);
+    console.log('Audio ready state:', audio.readyState);
+    console.log('Audio network state:', audio.networkState);
+    
     try {
-      await audio.play();
-      playing = true;
+      // Wait more for the audio to be ready
+      let attempts = 0;
+      while (!ready && attempts < 5) {
+        console.log(`Waiting for audio to be ready... attempt ${attempts + 1}`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        attempts++;
+      }
+      
+      if (!ready) {
+        console.warn('Audio not ready after 5 attempts, trying to play anyway');
+      }
+      
+      const playPromise = audio.play();
+      console.log('Play promise:', playPromise);
+      
+      await playPromise;
+      
+      // Verificar que realmente está sonando
+      setTimeout(() => {
+        if (checkAudioPlaying()) {
+          playing = true;
+          setLabel();
+          console.log('✅ AUDIO PLAYING SUCCESSFULLY!');
+        } else {
+          console.log('❌ Audio play() succeeded but not actually playing');
+          playing = false;
+          setLabel();
+        }
+      }, 500);
+      
+    } catch (error) {
+      console.error('❌ PLAY ERROR:', error);
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      
+      if (error.name === 'NotAllowedError') {
+        console.log('🔒 Autoplay blocked by browser - user interaction required');
+        alert('🔒 Haz clic en el botón ▶ para reproducir música');
+        if (label) label.textContent = "▶";
+      } else if (error.name === 'NotSupportedError') {
+        console.log('❌ Audio format not supported');
+        alert('❌ Formato de audio no soportado');
+        if (label) label.textContent = "❌";
+      } else {
+        console.log('❌ Other error:', error);
+        if (label) label.textContent = "▶";
+      }
+      playing = false;
       setLabel();
-    } catch {
-      // Autoplay might be blocked; user gesture needed
     }
   };
 
@@ -408,22 +533,70 @@
     audio.pause();
     playing = false;
     setLabel();
+    console.log('Audio paused');
   };
 
   if (toggle) {
     toggle.addEventListener("click", () => {
-      if (!cfg.audio?.url) return;
+      if (!cfg.audio?.url) {
+        console.log('No audio URL configured');
+        return;
+      }
+      console.log('🎵 Toggle clicked, playing:', playing);
       playing ? pause() : play();
     });
   }
 
+  // Initialize audio on page load
+  console.log('🎵 Initializing audio...');
+  console.log('🎵 Audio URL:', cfg.audio?.url);
+  
+  if (cfg.audio?.url) {
+    console.log('🎵 Audio URL found, calling ensureAudio...');
+    ensureAudio();
+    
+    // Iniciar monitoreo constante cada segundo
+    setInterval(updateAudioStatus, 1000);
+    
+  } else {
+    console.log('❌ No audio URL configured');
+  }
+
+  // Add a test button click to debug
+  if (toggle) {
+    console.log('✅ Audio toggle button found');
+  } else {
+    console.log('❌ Audio toggle button NOT found');
+  }
+
   if (cfg.audio?.autoplay) {
+    // Intentar reproducir automáticamente lo antes posible
+    const attemptAutoplay = async () => {
+      console.log('🎵 Attempting autoplay...');
+      try {
+        await play();
+      } catch (error) {
+        console.log('❌ Autoplay failed, waiting for user interaction');
+      }
+    };
+    
+    // Intentar autoplay inmediatamente
+    attemptAutoplay();
+    
+    // También intentar en el primer gesto del usuario
     const onFirstGesture = () => {
+      console.log('👆 First gesture detected, attempting play');
       window.removeEventListener("pointerdown", onFirstGesture);
+      window.removeEventListener("keydown", onFirstGesture);
+      window.removeEventListener("touchstart", onFirstGesture);
       play();
     };
+    
     window.addEventListener("pointerdown", onFirstGesture, { once: true });
+    window.addEventListener("keydown", onFirstGesture, { once: true });
+    window.addEventListener("touchstart", onFirstGesture, { once: true });
   }
 
   setLabel();
+  console.log('🎵 Audio initialization complete');
 })();
