@@ -20,8 +20,7 @@ body {
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
   color: var(--fg);
   overflow-x: hidden;
-  background: radial-gradient(1200px 800px at 30% 0%, rgba(255, 255, 255, 0.08), transparent 55%),
-    linear-gradient(180deg, var(--bg), #070709);
+  background: #000;
 }
 
 .page { min-height: 100%; }
@@ -180,13 +179,63 @@ body {
   text-transform: uppercase;
 }
 
+/* Countdown overlay - limited to countdown area only */
+.countdown-wrapper {
+  position: relative;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.countdown-overlay {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: transparent !important;
+  z-index: 5 !important;
+  pointer-events: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Gift section */
+.gift-icon {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.gift-alias {
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+  margin-top: 16px;
+  padding: 18px 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  cursor: pointer;
+  user-select: all;
+  max-width: fit-content;
+  line-height: 1.4;
+}
+
+.section#asistencia {
+  margin-top: 40px;
+}
+
+.gift-alias:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
 .section {
   padding: 70px 0;
-  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.00));
 }
 
 .section--dark {
-  background: linear-gradient(180deg, rgba(0,0,0,0.22), rgba(0,0,0,0.45));
+  background: #000;
 }
 
 .section__title {
@@ -253,6 +302,10 @@ body {
   margin-top: 10px;
   font-size: 18px;
   color: var(--muted);
+}
+
+.panel__button {
+  margin-top: 24px;
 }
 
 .panel__hint {
@@ -344,8 +397,8 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 220px;
-  padding: 14px 18px;
+  min-width: 260px;
+  padding: 14px 24px;
   border-radius: 999px;
   font-weight: 900;
   letter-spacing: 0.14em;
@@ -355,6 +408,9 @@ body {
   background: var(--btn);
   border: 1px solid rgba(255,255,255,0.25);
   box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .btn--ghost {
