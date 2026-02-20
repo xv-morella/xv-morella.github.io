@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Invitación</title>
+    <link rel="stylesheet" href="styles.css" />
+    <meta name="theme-color" content="#0b0b0d" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero" id="top">
+        <div class="hero__bg" aria-hidden="true"></div>
+        <div class="hero__overlay" aria-hidden="true"></div>
+
+        <button class="audio" type="button" id="audioToggle" aria-label="Reproducir música">
+          <span class="audio__icon" aria-hidden="true">♪</span>
+          <span class="audio__label" id="audioLabel">Música</span>
+        </button>
+
+        <div class="hero__content">
+          <div class="hero__kicker" id="heroKicker">MIS XV</div>
+          <h1 class="hero__name" id="heroName">Nombre</h1>
+          <div class="hero__date" id="heroDate">00.00.0000</div>
+          <div class="hero__quote" id="heroQuote">Texto de bienvenida</div>
+
+          <div class="card card--countdown">
+            <div class="card__title" id="countdownTitle">Faltan</div>
+            <div class="countdown-embed" id="countdownEmbedWrap" style="display: none">
+              <iframe
+                id="countdownEmbed"
+                title="Countdown"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+                src=""
+                allowfullscreen
+              ></iframe>
+            </div>
+
+            <div class="countdown" id="countdown">
+              <div class="countdown__item">
+                <div class="countdown__num" id="cdDays">0</div>
+                <div class="countdown__label">Días</div>
+              </div>
+              <div class="countdown__item">
+                <div class="countdown__num" id="cdHours">0</div>
+                <div class="countdown__label">Hs</div>
+              </div>
+              <div class="countdown__item">
+                <div class="countdown__num" id="cdMins">0</div>
+                <div class="countdown__label">Min</div>
+              </div>
+              <div class="countdown__item">
+                <div class="countdown__num" id="cdSecs">0</div>
+                <div class="countdown__label">Seg</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main>
+        <section class="section section--dark" id="fecha">
+          <div class="container">
+            <h2 class="section__title" id="whenTitle">Cuándo</h2>
+            <div class="two">
+              <div class="panel">
+                <div class="panel__big" id="whenDayName">Sábado</div>
+                <div class="panel__line" id="whenDateLong">14 de Marzo de 2026</div>
+                <div class="panel__line" id="whenTime">21:00 hs</div>
+              </div>
+              <div class="panel panel--cta">
+                <div class="panel__hint" id="calendarHint">Agendalo</div>
+                <a class="btn" id="calendarLink" href="#" target="_blank" rel="noopener noreferrer">AGENDAR</a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="lugar">
+          <div class="container">
+            <h2 class="section__title" id="whereTitle">Lugar de Celebración</h2>
+            <div class="two">
+              <div class="panel">
+                <div class="panel__big" id="venueName">Salón</div>
+                <div class="panel__line" id="venueAddress">Dirección</div>
+                <a class="btn btn--ghost" id="mapsLink" href="#" target="_blank" rel="noopener noreferrer">VER UBICACIÓN</a>
+              </div>
+              <div class="panel panel--map">
+                <iframe
+                  id="mapsEmbed"
+                  title="Mapa"
+                  loading="lazy"
+                  referrerpolicy="no-referrer-when-downgrade"
+                  allowfullscreen
+                  src=""
+                ></iframe>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section section--dark" id="asistencia">
+          <div class="container">
+            <h2 class="section__title" id="rsvpTitle">¿Venís?</h2>
+            <p class="section__text" id="rsvpText">Confirmá tu presencia.</p>
+            <form class="form" id="rsvpForm">
+              <label class="field">
+                <span class="field__label">Nombre</span>
+                <input class="field__input" id="rsvpName" name="name" type="text" autocomplete="name" required />
+              </label>
+
+              <fieldset class="field field--radio">
+                <legend class="field__label">Confirmación</legend>
+                <label class="radio">
+                  <input type="radio" name="status" value="SI" required />
+                  <span>Sí, voy</span>
+                </label>
+                <label class="radio">
+                  <input type="radio" name="status" value="NO" required />
+                  <span>No, no asisto</span>
+                </label>
+              </fieldset>
+
+              <div class="form__actions">
+                <button class="btn" type="submit">CONFIRMAR</button>
+                <button class="btn btn--ghost" type="button" id="exportRsvp">EXPORTAR RSVP</button>
+              </div>
+              <div class="form__status" id="rsvpStatus" aria-live="polite"></div>
+            </form>
+          </div>
+        </section>
+
+        <section class="section" id="menu">
+          <div class="container">
+            <h2 class="section__title" id="menuTitle">Menú especial</h2>
+            <p class="section__text" id="menuText">Si tenés alguna condición con el menú, avisanos.</p>
+            <form class="form" id="menuForm">
+              <label class="field">
+                <span class="field__label">Nombre</span>
+                <input class="field__input" id="menuName" name="name" type="text" autocomplete="name" required />
+              </label>
+
+              <label class="field">
+                <span class="field__label">Detalle</span>
+                <textarea class="field__input field__input--area" id="menuDetail" name="detail" rows="4" required></textarea>
+              </label>
+
+              <div class="form__actions">
+                <button class="btn btn--ghost" type="submit">ENVIAR</button>
+                <button class="btn btn--ghost" type="button" id="exportMenu">EXPORTAR MENÚ</button>
+              </div>
+              <div class="form__status" id="menuStatus" aria-live="polite"></div>
+            </form>
+          </div>
+        </section>
+
+        <section class="section section--dark" id="dresscode">
+          <div class="container">
+            <h2 class="section__title" id="dressTitle">Dress Code</h2>
+            <div class="panel panel--dress">
+              <div class="panel__big" id="dressValue">Elegante Sport</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="playlist">
+          <div class="container">
+            <h2 class="section__title" id="playlistTitle">Playlist</h2>
+            <p class="section__text" id="playlistText">¿Qué canción no puede faltar?</p>
+            <div class="center">
+              <a class="btn" id="playlistLink" href="#" target="_blank" rel="noopener noreferrer">SUGERIR CANCIÓN</a>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <a class="footer__top" href="#top">Volver arriba</a>
+      </footer>
+    </div>
+
+    <audio id="bgAudio" preload="none" crossorigin="anonymous"></audio>
+
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
