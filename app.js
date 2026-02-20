@@ -162,26 +162,68 @@
       const title = cfg.event?.calendarTitle || (cfg.hero?.name ? `XV de ${cfg.hero.name}` : "Evento");
       const description = cfg.event?.calendarDescription || "";
       const location = [cfg.venue?.name, cfg.venue?.address].filter(Boolean).join(" - ");
-      const uid = `${start.getTime()}-${Math.random().toString(16).slice(2)}@invitacion`;
 
-      const ics =
-        "BEGIN:VCALENDAR\r\n" +
-        "VERSION:2.0\r\n" +
-        "PRODID:-//Invitacion//ES\r\n" +
-        "CALSCALE:GREGORIAN\r\n" +
-        "METHOD:PUBLISH\r\n" +
-        "BEGIN:VEVENT\r\n" +
-        `UID:${uid}\r\n` +
-        `DTSTAMP:${toIcsUtc(new Date())}\r\n` +
-        `DTSTART:${toIcsUtc(start)}\r\n` +
-        `DTEND:${toIcsUtc(end)}\r\n` +
-        `SUMMARY:${String(title).replace(/\n/g, " ")}\r\n` +
-        `DESCRIPTION:${String(description).replace(/\n/g, "\\n")}\r\n` +
-        `LOCATION:${String(location).replace(/\n/g, " ")}\r\n` +
-        "END:VEVENT\r\n" +
-        "END:VCALENDAR\r\n";
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isAndroid = /Android/.test(navigator.userAgent);
 
-      downloadTextFile("evento.ics", ics, "text/calendar;charset=utf-8");
+      if (isIOS) {
+        // Build .ics for iOS Calendar (webcal) using UTC to avoid timezone shifts
+        const uid = `${start.getTime()}-${Math.random().toString(16).slice(2)}@invitacion`;
+        const ics =
+          "BEGIN:VCALENDAR\r\n" +
+          "VERSION:2.0\r\n" +
+          "PRODID:-//Invitacion//ES\r\n" +
+          "CALSCALE:GREGORIAN\r\n" +
+          "METHOD:PUBLISH\r\n" +
+          "BEGIN:VEVENT\r\n" +
+          `UID:${uid}\r\n` +
+          `DTSTAMP:${toIcsUtc(new Date())}\r\n` +
+          `DTSTART;VALUE=DATE-TIME:${toIcsUtc(start)}\r\n` +
+          `DTEND;VALUE=DATE-TIME:${toIcsUtc(end)}\r\n` +
+          `SUMMARY:${String(title).replace(/\n/g, " ")}\r\n` +
+          `DESCRIPTION:${String(description).replace(/\n/g, "\\n")}\r\n` +
+          `LOCATION:${String(location).replace(/\n/g, " ")}\r\n` +
+          `X-GOOGLE-ALLOW-INVITE-NO:TRUE\r\n` +
+          `X-GOOGLE-ALLOW-SEE-GUESTS:NO\r\n` +
+          `BEGIN:VALARM\r\n` +
+          `ACTION:DISPLAY\r\n` +
+          `DESCRIPTION:Event reminder\r\n` +
+          `TRIGGER:-P1D\r\n` +
+          `END:VALARM\r\n` +
+          "END:VEVENT\r\n" +
+          "END:VCALENDAR\r\n";
+        const icsBlob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+        const icsUrl = URL.createObjectURL(icsBlob);
+        // Open via webcal protocol to add to iOS Calendar
+        const webcalUrl = icsUrl.replace(/^http:/, "webcal:").replace(/^https:/, "webcal:");
+        window.location.href = webcalUrl;
+        // Clean up
+        setTimeout(() => URL.revokeObjectURL(icsUrl), 5000);
+      } else if (isAndroid) {
+        // Google Calendar for Android: use local time to avoid timezone shift
+        const formatDate = (d) => d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0") + "T" + String(d.getHours()).padStart(2, "0") + String(d.getMinutes()).padStart(2, "0") + String(d.getSeconds()).padStart(2, "0");
+        const gcalUrl = new URL("https://calendar.google.com/calendar/render");
+        gcalUrl.searchParams.set("action", "TEMPLATE");
+        gcalUrl.searchParams.set("text", title);
+        gcalUrl.searchParams.set("dates", `${formatDate(start)}/${formatDate(end)}`);
+        if (description) gcalUrl.searchParams.set("details", description);
+        if (location) gcalUrl.searchParams.set("location", location);
+        gcalUrl.searchParams.set("trp", "false");
+        gcalUrl.searchParams.set("rem", "1440");
+        window.open(gcalUrl.toString(), "_blank", "noopener,noreferrer");
+      } else {
+        // Desktop: Google Calendar with local time
+        const formatDate = (d) => d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0") + "T" + String(d.getHours()).padStart(2, "0") + String(d.getMinutes()).padStart(2, "0") + String(d.getSeconds()).padStart(2, "0");
+        const gcalUrl = new URL("https://calendar.google.com/calendar/render");
+        gcalUrl.searchParams.set("action", "TEMPLATE");
+        gcalUrl.searchParams.set("text", title);
+        gcalUrl.searchParams.set("dates", `${formatDate(start)}/${formatDate(end)}`);
+        if (description) gcalUrl.searchParams.set("details", description);
+        if (location) gcalUrl.searchParams.set("location", location);
+        gcalUrl.searchParams.set("trp", "false");
+        gcalUrl.searchParams.set("rem", "1440");
+        window.open(gcalUrl.toString(), "_blank", "noopener,noreferrer");
+      }
     });
   }
 
@@ -197,9 +239,25 @@
 
   const embed = $("mapsEmbed");
   const mapsEmbedUrl = cfg.venue?.mapsEmbedUrl || "";
+  const mapsUrl = cfg.venue?.mapsUrl || "";
   if (embed) {
-    if (mapsEmbedUrl) embed.src = mapsEmbedUrl;
-    else embed.closest(".panel--map").style.display = "none";
+    if (mapsEmbedUrl) {
+      embed.src = mapsEmbedUrl;
+    } else if (mapsUrl) {
+      // Build a simple embed URL from Google Maps URL (mapsUrl)
+      const placeIdMatch = mapsUrl.match(/!1s([^!]+)/);
+      const coordsMatch = mapsUrl.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+      if (placeIdMatch && coordsMatch) {
+        const placeId = placeIdMatch[1];
+        const lat = coordsMatch[1];
+        const lng = coordsMatch[2];
+        embed.src = `https://www.google.com/maps/embed/v1/place?key=&q=place_id:${placeId}&center=${lat},${lng}&zoom=16&maptype=roadmap`;
+      } else {
+        embed.closest(".panel--map").style.display = "none";
+      }
+    } else {
+      embed.closest(".panel--map").style.display = "none";
+    }
   }
 
   if (cfg.rsvp?.title) $("rsvpTitle").textContent = cfg.rsvp.title;
@@ -213,131 +271,46 @@
 
   if (cfg.playlist?.title) $("playlistTitle").textContent = cfg.playlist.title;
   if (cfg.playlist?.text) $("playlistText").textContent = cfg.playlist.text;
-  if (cfg.playlist?.whatsappUrl) {
-    $("playlistLink").href = cfg.playlist.whatsappUrl;
-  } else {
-    $("playlistLink").style.display = "none";
+
+  const playlistSuggest = $("playlistSuggest");
+  if (playlistSuggest) {
+    playlistSuggest.addEventListener("click", () => {
+      const spotifyUrl = cfg.playlist?.spotifyUrl;
+      if (!spotifyUrl) return;
+      window.open(spotifyUrl, "_blank", "noopener,noreferrer");
+    });
   }
-  if (cfg.playlist?.buttonLabel) $("playlistLink").textContent = cfg.playlist.buttonLabel;
 
   const RSVP_KEY = "invitacion_rsvp";
   const MENU_KEY = "invitacion_menu";
 
-  const rsvpForm = $("rsvpForm");
+  const rsvpConfirm = $("rsvpConfirm");
   const rsvpStatus = $("rsvpStatus");
-  const exportRsvp = $("exportRsvp");
-  if (rsvpForm) {
-    rsvpForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const form = new FormData(rsvpForm);
-      const name = String(form.get("name") || "").trim();
-      const status = String(form.get("status") || "").trim();
-      if (!name || !status) return;
-
-      const row = {
-        ts: new Date().toISOString(),
-        name,
-        status,
-      };
-
-      const rows = readJsonArray(RSVP_KEY);
-      rows.push(row);
-      writeJsonArray(RSVP_KEY, rows);
-      if (rsvpStatus) rsvpStatus.textContent = "Enviando...";
-
-      Promise.resolve()
-        .then(() => postToSheets({ type: "rsvp", ...row }))
-        .then((res) => {
-          rsvpForm.reset();
-          if (!rsvpStatus) return;
-          if (res?.skipped) {
-            rsvpStatus.textContent = "¡Listo! Tu respuesta quedó registrada.";
-            return;
-          }
-          if (res?.unverified) {
-            rsvpStatus.textContent = "Enviado. Si no aparece en la planilla en unos segundos, reintentá.";
-            return;
-          }
-          if (res?.ok) {
-            rsvpStatus.textContent = "¡Listo! Tu respuesta quedó registrada.";
-            return;
-          }
-          rsvpStatus.textContent = "Guardado en el dispositivo, pero falló el envío a la planilla.";
-        })
-        .catch(() => {
-          rsvpForm.reset();
-          if (rsvpStatus) rsvpStatus.textContent = "Guardado en el dispositivo, pero falló el envío a la planilla.";
-        });
+  if (rsvpConfirm) {
+    rsvpConfirm.addEventListener("click", () => {
+      const formUrl = cfg.rsvp?.formUrl;
+      if (rsvpStatus) rsvpStatus.textContent = "Abriendo formulario...";
+      if (!formUrl) {
+        if (rsvpStatus) rsvpStatus.textContent = "Falta configurar el link del formulario.";
+        return;
+      }
+      window.open(formUrl, "_blank", "noopener,noreferrer");
+      if (rsvpStatus) rsvpStatus.textContent = "Se abrió el formulario para confirmar.";
     });
   }
 
-  if (exportRsvp) {
-    exportRsvp.addEventListener("click", () => {
-      const rows = readJsonArray(RSVP_KEY);
-      downloadCsv(
-        "rsvp.csv",
-        ["ts", "name", "status"],
-        rows,
-      );
-    });
-  }
-
-  const menuForm = $("menuForm");
+  const menuConfirm = $("menuConfirm");
   const menuStatus = $("menuStatus");
-  const exportMenu = $("exportMenu");
-  if (menuForm) {
-    menuForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const form = new FormData(menuForm);
-      const name = String(form.get("name") || "").trim();
-      const detail = String(form.get("detail") || "").trim();
-      if (!name || !detail) return;
-
-      const row = {
-        ts: new Date().toISOString(),
-        name,
-        detail,
-      };
-
-      const rows = readJsonArray(MENU_KEY);
-      rows.push(row);
-      writeJsonArray(MENU_KEY, rows);
-      if (menuStatus) menuStatus.textContent = "Enviando...";
-
-      Promise.resolve()
-        .then(() => postToSheets({ type: "menu", ...row }))
-        .then((res) => {
-          menuForm.reset();
-          if (!menuStatus) return;
-          if (res?.skipped) {
-            menuStatus.textContent = "¡Gracias! Quedó registrado.";
-            return;
-          }
-          if (res?.unverified) {
-            menuStatus.textContent = "Enviado. Si no aparece en la planilla en unos segundos, reintentá.";
-            return;
-          }
-          if (res?.ok) {
-            menuStatus.textContent = "¡Gracias! Quedó registrado.";
-            return;
-          }
-          menuStatus.textContent = "Guardado en el dispositivo, pero falló el envío a la planilla.";
-        })
-        .catch(() => {
-          menuForm.reset();
-          if (menuStatus) menuStatus.textContent = "Guardado en el dispositivo, pero falló el envío a la planilla.";
-        });
-    });
-  }
-
-  if (exportMenu) {
-    exportMenu.addEventListener("click", () => {
-      const rows = readJsonArray(MENU_KEY);
-      downloadCsv(
-        "menu-especial.csv",
-        ["ts", "name", "detail"],
-        rows,
-      );
+  if (menuConfirm) {
+    menuConfirm.addEventListener("click", () => {
+      const formUrl = cfg.menu?.formUrl;
+      if (menuStatus) menuStatus.textContent = "Abriendo formulario...";
+      if (!formUrl) {
+        if (menuStatus) menuStatus.textContent = "Falta configurar el link del formulario.";
+        return;
+      }
+      window.open(formUrl, "_blank", "noopener,noreferrer");
+      if (menuStatus) menuStatus.textContent = "Se abrió el formulario para avisar.";
     });
   }
 
