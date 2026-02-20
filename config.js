@@ -13,8 +13,8 @@ window.INVITACION_CONFIG = {
   },
 
   audio: {
-    url: "music.mp3",
-    autoplay: false,
+    url: "https://github.com/xv-morella/xv-morella.github.io/raw/refs/heads/main/music.mp3",
+    autoplay: true,
   },
 
   sheets: {
