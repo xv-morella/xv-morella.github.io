@@ -389,21 +389,27 @@
     );
     if (!containers.length) return;
 
-    let svgText = "";
-    try {
-      const res = await fetch("star.svg", { cache: "no-store" });
-      svgText = await res.text();
-    } catch {
-      return;
-    }
-
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(svgText, "image/svg+xml");
-    const template = doc.querySelector("svg");
-    if (!template) return;
+    // Precargar SVG una sola vez
+    let svgTemplate = null;
+    const preloadSVG = async () => {
+      if (svgTemplate) return svgTemplate;
+      
+      try {
+        const res = await fetch("star.svg", { cache: "force-cache" });
+        const svgText = await res.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgText, "image/svg+xml");
+        svgTemplate = doc.querySelector("svg");
+        return svgTemplate;
+      } catch {
+        return null;
+      }
+    };
 
     const createStarSvg = ({ seed, durScale, beginOffset, idSuffix }) => {
-      const svg = template.cloneNode(true);
+      if (!svgTemplate) return null;
+      
+      const svg = svgTemplate.cloneNode(true);
       svg.removeAttribute("width");
       svg.removeAttribute("height");
 
@@ -443,12 +449,17 @@
       const turb = svg.querySelector("feTurbulence");
       if (turb) turb.setAttribute("seed", String(seed));
 
+      // Optimización simple de animaciones
       const anims = svg.querySelectorAll("animate");
       for (const a of anims) {
         const dur = a.getAttribute("dur");
         if (dur && dur.endsWith("s")) {
-          const n = Number(dur.slice(0, -1));
-          if (!Number.isNaN(n)) a.setAttribute("dur", `${Math.max(0.35, n * durScale)}s`);
+          let n = Number(dur.slice(0, -1));
+          if (!Number.isNaN(n)) {
+            // Animaciones más lentas para mejor rendimiento
+            n = Math.max(2, n * 1.3);
+            a.setAttribute("dur", `${n * durScale}s`);
+          }
         }
         a.setAttribute("begin", `${Math.max(0, beginOffset)}s`);
       }
@@ -459,6 +470,11 @@
     const rand = (min, max) => min + Math.random() * (max - min);
     const randInt = (min, max) => Math.floor(rand(min, max + 1));
 
+    // Precargar SVG
+    await preloadSVG();
+    if (!svgTemplate) return;
+
+    // Procesar todos los contenedores de forma simple
     for (const c of containers) {
       c.classList.add("stars--js");
       c.textContent = "";
@@ -466,70 +482,85 @@
       const rect = c.getBoundingClientRect();
       const w = Math.max(1, rect.width);
       const h = Math.max(1, rect.height);
-      const padding = Math.max(5, Math.min(12, Math.min(w, h) * 0.02));
       const placed = [];
 
       const isHero = c.classList.contains("hero__stars");
       const isFooter = c.classList.contains("footer__stars");
-      const count = isHero ? 26 : isFooter ? 20 : 20;
+      const count = isHero ? 15 : isFooter ? 12 : 10;
+
+      // Crear estrellas directamente sin lotes complejos
+      const fragment = document.createDocumentFragment();
 
       for (let i = 0; i < count; i++) {
         const star = document.createElement("div");
         star.className = "star";
 
-        const size = randInt(18, 48);
+        const size = randInt(15, 45);
         const r = size / 2;
+        const minDistance = size * 2;
 
         const fits = (x, y) => {
           for (const p of placed) {
             const dx = x - p.x;
             const dy = y - p.y;
-            const min = (p.size / 2) + r + padding;
-            if (dx * dx + dy * dy < min * min) return false;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const minAllowed = (p.size / 2) + r + minDistance;
+            if (distance < minAllowed) return false;
           }
           return true;
         };
 
-        let x = 0;
-        let y = 0;
-        let ok = false;
-        const maxTries = 90;
-        for (let t = 0; t < maxTries; t++) {
-          // Keep within bounds so the star doesn't clip
-          x = rand(r + 2, w - r - 2);
-          y = rand(r + 2, h - r - 2);
-          if (fits(x, y)) {
-            ok = true;
-            break;
+        // Sistema simple de grid natural
+        const cols = Math.ceil(Math.sqrt(count * (w / h)));
+        const rows = Math.ceil(count / cols);
+        const cellWidth = w / cols;
+        const cellHeight = h / rows;
+        
+        const row = Math.floor(i / cols);
+        const col = i % cols;
+        
+        let x = col * cellWidth + cellWidth / 2 + rand(-cellWidth/3, cellWidth/3);
+        let y = row * cellHeight + cellHeight / 2 + rand(-cellHeight/3, cellHeight/3);
+        
+        const margin = r + 15;
+        x = Math.max(margin, Math.min(w - margin, x));
+        y = Math.max(margin, Math.min(h - margin, y));
+        
+        // Si no cabe, buscar posición aleatoria simple
+        if (!fits(x, y)) {
+          let attempts = 0;
+          while (attempts < 50 && !fits(x, y)) {
+            x = rand(margin, w - margin);
+            y = rand(margin, h - margin);
+            attempts++;
           }
-        }
-
-        if (!ok) {
-          // Fallback: accept last position to avoid infinite loops on small screens
-          x = rand(r + 2, w - r - 2);
-          y = rand(r + 2, h - r - 2);
         }
 
         placed.push({ x, y, size });
 
         star.style.width = `${size}px`;
         star.style.height = `${size}px`;
-        star.style.left = `${(x / w) * 100}%`;
-        star.style.top = `${(y / h) * 100}%`;
+        star.style.left = `${x}px`;
+        star.style.top = `${y}px`;
+        star.style.transform = `translate(-50%, -50%)`;
         star.style.opacity = "0.40";
         star.style.mixBlendMode = "screen";
         star.style.filter = "drop-shadow(0 0 6px rgba(255,255,255,0.45))";
 
         const svg = createStarSvg({
           seed: randInt(1, 9999),
-          durScale: rand(0.7, 1.35),
-          beginOffset: rand(0, 2.5),
+          durScale: rand(0.8, 1.6),
+          beginOffset: rand(0, 3.0),
           idSuffix: `${Date.now()}-${Math.random().toString(16).slice(2)}-${i}`,
         });
 
-        star.appendChild(svg);
-        c.appendChild(star);
+        if (svg) {
+          star.appendChild(svg);
+          fragment.appendChild(star);
+        }
       }
+
+      c.appendChild(fragment);
     }
   };
 
