@@ -8,67 +8,96 @@
     <meta name="theme-color" content="#0b0b0d" />
   </head>
   <body>
-    <button class="audio audio--floating" type="button" id="audioToggle" aria-label="Reproducir música">
-      <span class="audio__icon" aria-hidden="true">♪</span>
-      <span class="audio__label" id="audioLabel">▶</span>
-    </button>
+    <div class="welcome welcome--hidden" id="welcomeModal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle" aria-describedby="welcomeText">
+      <div class="welcome__card">
+        <h2 class="welcome__title" id="welcomeTitle">Bienvenid@</h2>
+        <p class="welcome__text" id="welcomeText">¿Querés escuchar la invitación con música?</p>
+        <div class="welcome__actions">
+          <button class="btn" type="button" id="welcomeYes">SÍ</button>
+          <button class="btn btn--ghost" type="button" id="welcomeNo">NO</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="audio-player" id="audioPlayer">
+      <div class="audio-player__controls">
+        <button class="audio audio--play" type="button" id="audioToggle" aria-label="Reproducir música">
+          <span class="audio__label" id="audioLabel">▶</span>
+        </button>
+      </div>
+      <div class="audio-player__info" id="audioInfo" style="display: none;">
+        <div class="audio-player__cover" id="audioCover">
+          <div class="audio-player__cover-placeholder">♪</div>
+        </div>
+        <div class="audio-player__details">
+          <div class="audio-player__title" id="audioTitle">Cargando...</div>
+          <div class="audio-player__artist" id="audioArtist">Espera por favor</div>
+        </div>
+      </div>
+    </div>
 
     <div class="page">
       <header class="hero" id="top">
         <div class="hero__bg" aria-hidden="true"></div>
+        <div class="hero__stars" aria-hidden="true"></div>
+        <div class="hero__flor" aria-hidden="true"></div>
         <div class="hero__overlay" aria-hidden="true"></div>
 
         <div class="hero__content">
-          <div class="hero__kicker" id="heroKicker">MIS XV</div>
-          <h1 class="hero__name" id="heroName">Nombre</h1>
-          <div class="hero__date" id="heroDate">00.00.0000</div>
-          <div class="hero__quote" id="heroQuote">Texto de bienvenida</div>
-
-          <div class="card card--countdown">
-            <div class="card__title" id="countdownTitle">Faltan</div>
-            <script>
-              (function (d, s, id) {
-                var js,
-                  pjs = d.getElementsByTagName(s)[0];
-                if (d.getElementById(id)) return;
-                js = d.createElement(s);
-                js.id = id;
-                js.src = "//www.tickcounter.com/static/js/loader.js";
-                pjs.parentNode.insertBefore(js, pjs);
-              })(document, "script", "tickcounter-sdk");
-            </script>
-            <div class="countdown-wrapper" style="position: relative">
-              <a
-                data-type="countdown"
-                data-id="9492788"
-                class="tickcounter"
-                style="
-                  display: block;
-                  left: 0;
-                  width: 100%;
-                  height: 0;
-                  position: relative;
-                  padding-bottom: 25%;
-                  margin: 0 auto;
-                "
-                title="a"
-                href="//www.tickcounter.com/"
-                >a</a
-              >
-              <div
-                class="countdown-overlay"
-                aria-hidden="true"
-                style="position: absolute; inset: 0; background: transparent; z-index: 5"
-              ></div>
-            </div>
-          </div>
+          <h1 class="hero__name" id="heroName">Morella</h1>
+          <div class="hero__kicker" id="heroKicker">Mis XV</div>
+          <div class="hero__date" id="heroDate">22-08-2026</div>
         </div>
       </header>
 
       <main>
+        <section class="section reveal" id="mensaje">
+          <div class="section__stars" aria-hidden="true"></div>
+          <div class="container">
+            <div class="hero__quote" id="heroQuote">Texto de bienvenida</div>
+            
+            <div class="card card--countdown">
+              <div class="card__title" id="countdownTitle">Faltan</div>
+              <script>
+                (function (d, s, id) {
+                  var js,
+                    pjs = d.getElementsByTagName(s)[0];
+                  if (d.getElementById(id)) return;
+                  js = d.createElement(s);
+                  js.id = id;
+                  js.src = "//www.tickcounter.com/static/js/loader.js";
+                  pjs.parentNode.insertBefore(js, pjs);
+                })(document, "script", "tickcounter-sdk");
+              </script>
+              <div class="countdown-wrapper" style="position: relative">
+                <a
+                  data-type="countdown"
+                  data-id="9492788"
+                  class="tickcounter"
+                  style="
+                    display: block;
+                    left: 0;
+                    width: 100%;
+                    height: 0;
+                    position: relative;
+                    padding-bottom: 25%;
+                    margin: 0 auto;
+                  "
+                  title="a"
+                  href="//www.tickcounter.com/"
+                  >a</a
+                >
+                <div
+                  class="countdown-overlay"
+                  aria-hidden="true"
+                  style="position: absolute; inset: 0; background: transparent; z-index: 5"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </section>
         <section class="section section--dark" id="fecha">
           <div class="container">
-            <h2 class="section__title" id="whenTitle">Cuándo</h2>
             <div class="two">
               <div class="panel">
                 <div class="panel__big" id="whenDayName">Sábado</div>
@@ -76,15 +105,20 @@
                 <div class="panel__line" id="whenTime">21:00 hs</div>
               </div>
               <div class="panel panel--cta">
-                <div class="panel__hint" id="calendarHint">Agendalo</div>
                 <a class="btn" id="calendarLink" href="#" target="_blank" rel="noopener noreferrer">AGENDAR</a>
               </div>
             </div>
           </div>
         </section>
 
-        <section class="section" id="lugar">
+        <section class="section reveal" id="lugar">
           <div class="container">
+            <div class="locate-icon" id="locateIcon">
+              <svg fill="#ffffff" width="64px" height="64px" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                <path d="M16,1C9.925,1,5,5.925,5,12c0,10,10,19,11,19s11-9,11-19C27,5.925,22.075,1,16,1z M16,16
+                  c-2.209,0-4-1.791-4-4c0-2.209,1.791-4,4-4s4,1.791,4,4C20,14.209,18.209,16,16,16z"/>
+              </svg>
+            </div>
             <h2 class="section__title" id="whereTitle">Lugar de Celebración</h2>
             <div class="two">
               <div class="panel">
@@ -134,8 +168,27 @@
           </div>
         </section>
 
-        <section class="section" id="menu">
+        <section class="section reveal" id="fecha">
           <div class="container">
+            <div class="menu-icon" id="menuIcon">
+              <svg fill="#ffffff" width="64px" height="64px" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                <path d="M256,0C114.613,0,0,114.615,0,256s114.613,256,256,256c141.383,0,256-114.615,256-256S397.383,0,256,0z
+                  M379.652,402.722v-98.774v-8.938v-3.573v-7.201V161.333c0-5.3-2.656-10.245-7.066-13.177c-4.039-2.694-9.059-3.346-13.629-1.862
+                  c-0.422,0.131-0.84,0.263-1.254,0.432l-41.98,17.577c-5.051,2.11-8.648,6.681-9.524,12.083l-10.84,127.164
+                  c-0.728,4.531,0.539,9.165,3.488,12.681c2.945,3.524,36.008,32.46,36.008,32.46v82.297C310.779,441.882,284.098,448,256,448
+                  c-16.172,0-31.871-2.032-46.885-5.814V299.032c4.186-1.114,8.139-2.521,11.822-4.191c7.184-3.25,13.348-7.422,18.488-11.992
+                  c7.727-6.875,13.176-14.562,16.832-21.803c1.828-3.634,3.211-7.164,4.191-10.584c0.496-1.707,0.883-3.396,1.16-5.104
+                  c0.278-1.708,0.453-3.43,0.453-5.294c0-11.474,0-78.701,0-78.701c0-8.754-7.098-15.846-15.848-15.846s-15.84,7.092-15.84,15.846
+                  c0,0,0,1.051,0,2.916c0,9.157,0,37.98,0,57.756c0,7.539-6.117,13.657-13.664,13.657c-7.543,0-13.656-6.118-13.656-13.657
+                  c0-23.81,0-59.578,0-59.578c0-8.748-7.098-15.846-15.852-15.846c-8.752,0-15.848,7.098-15.848,15.846
+                  c0,0,0,1.056,0,2.912c0,8.995,0,36.938,0,56.666c0,7.539-6.114,13.657-13.66,13.657c-7.543,0-13.656-6.118-13.656-13.657
+                  c0-23.791,0-60.672,0-60.672c0-8.754-7.094-15.846-15.846-15.846c-8.752,0-15.85,7.092-15.85,15.846
+                  c0,0,0,1.051,0,2.916c0,13.02,0,65.742,0,75.785c0.008,1.66,0.141,3.201,0.365,4.723c0.428,2.846,1.154,5.646,2.16,8.558
+                  c1.764,5.057,4.396,10.408,8.068,15.813c2.758,4.043,6.105,8.092,10.121,11.926c6.014,5.736,13.563,10.974,22.664,14.732
+                  c3.023,1.251,6.226,2.312,9.574,3.201v126.154C105.051,392.741,64,329.081,64,256c0-105.869,86.129-192,192-192
+                  c105.867,0,192,86.131,192,192C448,314.796,421.408,367.474,379.652,402.722z"/>
+              </svg>
+            </div>
             <h2 class="section__title" id="menuTitle">Menú especial</h2>
             <p class="section__text" id="menuText">Si tenés alguna condición con el menú, avisanos.</p>
             <div class="form">
@@ -147,8 +200,26 @@
           </div>
         </section>
 
-        <section class="section section--dark" id="dresscode">
+        <section class="section reveal" id="dresscode">
           <div class="container">
+            <div class="dress-code-icon" id="dressCodeIcon">
+              <svg fill="#ffffff" width="64px" height="64px" viewBox="0 0 512 512" id="_x32_" xmlns="http://www.w3.org/2000/svg">
+                <path d="M506.663,405.366c-3.461-6.338-8.574-11.877-15.002-15.908L261.733,245.175v-20.395
+                  c-0.004-0.702,0.333-1.336,0.836-1.784c2.056-0.18,4.778-0.508,7.98-1.135c6.559-1.299,15.178-3.688,23.833-9.272
+                  c12.695-8.256,23.217-19.498,30.597-32.787c7.375-13.288,11.586-28.652,11.582-44.859c0.008-25.501-10.392-48.756-27.106-65.456
+                  c-16.693-16.714-39.947-27.099-65.44-27.099c-19.108,0-37.013,5.83-51.765,15.812c-14.759,9.98-26.464,24.075-33.508,40.708
+                  c-3.811,9.011,0.411,19.41,9.421,23.224c9.014,3.808,19.417-0.403,23.225-9.413c4.322-10.228,11.59-18.984,20.712-25.144
+                  c9.13-6.158,20.026-9.742,31.914-9.742c15.815,0,29.984,6.36,40.376,16.73c10.362,10.384,16.718,24.553,16.722,40.38
+                  c-0.004,10.093-2.58,19.447-7.126,27.651c-4.547,8.19-11.079,15.178-18.917,20.269c-3.054,2.038-7.6,3.531-11.274,4.217
+                  c-1.828,0.351-3.415,0.538-4.449,0.62c-0.522,0.052-0.9,0.075-1.097,0.082h-0.105l-2.404,0.03l-2.359,0.702
+                  c-16.065,4.756-27.091,19.507-27.095,36.267v20.94L18.578,390.622l0.004-0.014C6.716,398.886-0.011,412.301,0,426.217
+                  c0,4.344,0.658,8.742,2.001,13.004c5.684,18.096,22.444,30.391,41.399,30.391h425.197c19.35,0,36.352-12.803,41.708-31.399v-0.008
+                  c1.132-3.964,1.695-8.003,1.695-11.989C512,418.863,510.13,411.711,506.663,405.366z M476.242,428.426v-0.008
+                  c-0.978,3.397-4.102,5.756-7.644,5.756H43.4c-3.475,0-6.548-2.27-7.585-5.569c-0.258-0.806-0.369-1.605-0.369-2.389
+                  c0.007-2.553,1.224-5.017,3.4-6.525h0.008L244.53,276.224l228.292,143.251c1.206,0.762,2.102,1.747,2.748,2.912
+                  c0.642,1.164,0.989,2.486,0.989,3.83C476.559,426.941,476.454,427.665,476.242,428.426z"/>
+              </svg>
+            </div>
             <h2 class="section__title" id="dressTitle">Dress Code</h2>
             <div class="panel panel--dress">
               <div class="panel__big" id="dressValue">Elegante Sport</div>
@@ -156,9 +227,22 @@
           </div>
         </section>
 
-        <section class="section" id="playlist">
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section reveal" id="playlist">
           <div class="container">
-            <h2 class="section__title" id="playlistTitle">Playlist</h2>
+            <div class="music-icon" id="musicIcon">
+              <svg fill="#ffffff" width="64px" height="64px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10.5" fill="none" stroke="#ffffff" stroke-width="1.91"/>
+                <circle cx="8.18" cy="14.86" r="0.95" fill="#ffffff"/>
+                <circle cx="13.91" cy="13.91" r="0.95" fill="#ffffff"/>
+                <polyline points="14.86 13.91 14.86 8.18 9.14 9.14 9.14 14.86" fill="none" stroke="#ffffff" stroke-width="1.91"/>
+              </svg>
+            </div>
+            <h2 class="section__title" id="playlistTitle">Música</h2>
             <p class="section__text" id="playlistText">¿Qué canción no puede faltar?</p>
             <div class="form">
               <div class="form__actions">
@@ -167,135 +251,31 @@
             </div>
           </div>
         </section>
+
+        <section class="section reveal" id="final">
+          <div class="section__stars" aria-hidden="true"></div>
+          <div class="container" style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+            <div class="center" style="text-align: center;">
+              <h2 class="section__title" style="font-size: clamp(48px, 7vw, 72px);">Te espero</h2>
+              <p class="section__text" style="font-size: clamp(24px, 4vw, 36px); margin-top: 16px;">More</p>
+            </div>
+          </div>
+        </section>
       </main>
 
       <footer class="footer">
-      </footer>
+          <div class="footer__stars" aria-hidden="true"></div>
+        </footer>
     </div>
 
     <audio id="bgAudio" preload="auto" crossorigin="anonymous"></audio>
 
     <script src="config.js"></script>
-    <script>console.log('Config.js loaded');</script>
+    <script src="https://cdn.jsdelivr.net/npm/jsmediatags@3.9.7/dist/jsmediatags.min.js"></script>
+    <script src="audio-player.js"></script>
+    <script src="scroll-effects.js"></script>
+    <script src="welcome-modal.js"></script>
+    <script src="metadata-toggle.js"></script>
     <script src="app.js"></script>
-    <script>console.log('App.js file loaded');</script>
-    
-    <!-- Script de prueba para audio -->
-    <script>
-      console.log('🎵 SCRIPT DE PRUEBA INICIADO');
-      
-      // Esperar a que todo cargue
-      window.addEventListener('load', () => {
-        console.log('🎵 Window loaded');
-        
-        const toggle = document.getElementById('audioToggle');
-        const label = document.getElementById('audioLabel');
-        const audio = document.getElementById('bgAudio');
-        
-        console.log('🎵 Elementos encontrados:');
-        console.log('- toggle:', toggle);
-        console.log('- label:', label);
-        console.log('- audio:', audio);
-        
-        if (!toggle || !label || !audio) {
-          console.error('❌ NO SE ENCONTRARON LOS ELEMENTOS');
-          return;
-        }
-        
-        let playing = false;
-        let audioInitialized = false;
-        
-        const updateButton = () => {
-          // Aplicar transición difuminada
-          toggle.style.transition = 'all 0.3s ease';
-          label.style.transition = 'all 0.3s ease';
-          
-          if (playing) {
-            label.textContent = '❚❚';
-            toggle.style.background = 'rgba(0, 255, 0, 0.5)';
-            toggle.style.transform = 'scale(1.05)';
-            toggle.style.boxShadow = '0 8px 25px rgba(0, 255, 0, 0.3)';
-            console.log('🎵 Botón en PAUSA');
-          } else {
-            label.textContent = '▶';
-            toggle.style.background = 'rgba(255, 0, 0, 0.5)';
-            toggle.style.transform = 'scale(1)';
-            toggle.style.boxShadow = '0 8px 25px rgba(255, 0, 0, 0.3)';
-            console.log('🎵 Botón en PLAY');
-          }
-        };
-        
-        const initializeAudio = () => {
-          if (!audioInitialized && window.INVITACION_CONFIG?.audio?.url) {
-            console.log('🎵 Inicializando audio...');
-            audio.src = window.INVITACION_CONFIG.audio.url;
-            audio.loop = true;
-            audio.volume = 0.7;
-            audioInitialized = true;
-            
-            // Event listeners para mejor control
-            audio.addEventListener('play', () => {
-              console.log('🎵 Audio event: play');
-            });
-            
-            audio.addEventListener('pause', () => {
-              console.log('🎵 Audio event: pause');
-            });
-            
-            audio.addEventListener('ended', () => {
-              console.log('🎵 Audio event: ended');
-            });
-            
-            audio.addEventListener('error', (e) => {
-              console.error('❌ Audio error:', e);
-            });
-          }
-        };
-        
-        toggle.addEventListener('click', (e) => {
-          console.log('🎵 ¡BOTÓN CLICKEADO!', e);
-          
-          if (!window.INVITACION_CONFIG?.audio?.url) {
-            console.error('❌ NO HAY URL DE AUDIO');
-            alert('❌ No hay URL de audio configurada');
-            return;
-          }
-          
-          // Inicializar audio si no está hecho
-          initializeAudio();
-          
-          if (playing) {
-            console.log('🎵 PAUSANDO...');
-            audio.pause();
-            playing = false;
-          } else {
-            console.log('🎵 REPRODUCIENDO...');
-            
-            audio.play().then(() => {
-              console.log('✅ AUDIO REPRODUCIÉNDOSE');
-              console.log('🎵 Current time:', audio.currentTime);
-              playing = true;
-            }).catch(error => {
-              console.error('❌ ERROR AL REPRODUCIR:', error);
-              if (error.name === 'NotAllowedError') {
-                alert('🔒 Haz clic en el botón para reproducir música (bloqueado por el navegador)');
-              } else {
-                alert('❌ Error al reproducir: ' + error.message);
-              }
-            });
-          }
-          
-          updateButton();
-        });
-        
-        // Estilos adicionales para el botón
-        toggle.style.cursor = 'pointer';
-        toggle.style.transition = 'all 0.3s ease';
-        
-        // Inicializar botón
-        updateButton();
-        console.log('🎵 SCRIPT DE PRUEBA COMPLETO');
-      });
-    </script>
   </body>
 </html>
