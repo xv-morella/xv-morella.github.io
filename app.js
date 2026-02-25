@@ -349,8 +349,9 @@
     embedWrap.style.display = "block";
     if (nativeWrap) nativeWrap.style.display = "none";
     // If we embed, we don't need the native interval.
-    return;
   }
+
+  const shouldRunNativeCountdown = !(countdownEmbedUrl && embedWrap && embedFrame);
 
   const targetIso = cfg.event?.start;
   const target = targetIso ? new Date(targetIso) : null;
@@ -367,236 +368,175 @@
     const mins = Math.floor((sec % 3600) / 60);
     const secs = sec % 60;
 
-    $("cdDays").textContent = String(days);
-    $("cdHours").textContent = String(hours).padStart(2, "0");
-    $("cdMins").textContent = String(mins).padStart(2, "0");
-    $("cdSecs").textContent = String(secs).padStart(2, "0");
+    const elDays = $("cdDays");
+    const elHours = $("cdHours");
+    const elMins = $("cdMins");
+    const elSecs = $("cdSecs");
+    if (elDays) elDays.textContent = String(days);
+    if (elHours) elHours.textContent = String(hours).padStart(2, "0");
+    if (elMins) elMins.textContent = String(mins).padStart(2, "0");
+    if (elSecs) elSecs.textContent = String(secs).padStart(2, "0");
   };
 
-  tick();
-  setInterval(tick, 1000);
+  if (shouldRunNativeCountdown) {
+    tick();
+    setInterval(tick, 1000);
+  }
 
-  // Audio
-  const audio = $("bgAudio");
-  const toggle = $("audioToggle");
-  const label = $("audioLabel");
+  const initStars = async () => {
+    const containers = Array.from(
+      document.querySelectorAll(".hero__stars, .section__stars, .footer__stars")
+    );
+    if (!containers.length) return;
 
-  let ready = false;
-  let playing = false;
-
-  const setLabel = () => {
-    if (!label) return;
-    if (playing) {
-      label.textContent = "❚❚";
-      toggle.style.background = "rgba(0, 255, 0, 0.3)";
-    } else {
-      label.textContent = "▶";
-      toggle.style.background = "rgba(255, 0, 0, 0.3)";
-    }
-  };
-
-  // Función para detectar si realmente está sonando
-  const checkAudioPlaying = () => {
-    if (!audio) return false;
-    
-    const isActuallyPlaying = !audio.paused && 
-                             audio.readyState > 2 && 
-                             audio.currentTime > 0;
-    
-    console.log('Audio state check:', {
-      paused: audio.paused,
-      readyState: audio.readyState,
-      currentTime: audio.currentTime,
-      actuallyPlaying: isActuallyPlaying
-    });
-    
-    return isActuallyPlaying;
-  };
-
-  // Actualizar estado periódicamente
-  const updateAudioStatus = () => {
-    const actuallyPlaying = checkAudioPlaying();
-    if (actuallyPlaying !== playing) {
-      console.log('Audio state mismatch detected!');
-      playing = actuallyPlaying;
-      setLabel();
-    }
-  };
-
-  const ensureAudio = () => {
-    if (!audio || ready) return;
-    const url = cfg.audio?.url;
-    if (!url) return;
-    
-    console.log('Setting audio src to:', url);
-    audio.src = url;
-    audio.loop = true;
-    audio.volume = 0.7;
-    audio.crossOrigin = "anonymous"; // Intentar evitar problemas de CORS
-    
-    // Add event listeners for better error handling
-    audio.addEventListener('canplaythrough', () => {
-      ready = true;
-      console.log('Audio ready to play');
-    });
-    
-    audio.addEventListener('error', (e) => {
-      console.error('Audio error:', e);
-      console.error('Audio error code:', audio.error ? audio.error.code : 'unknown');
-      console.error('Audio error message:', audio.error ? audio.error.message : 'unknown');
-      console.error('Audio network state:', audio.networkState);
-      console.error('Audio ready state:', audio.readyState);
-      if (label) label.textContent = "❚❚";
-    });
-    
-    audio.addEventListener('loadstart', () => {
-      console.log('Audio loading started');
-    });
-    
-    audio.addEventListener('loadeddata', () => {
-      console.log('Audio data loaded');
-    });
-    
-    audio.addEventListener('stalled', () => {
-      console.log('Audio loading stalled');
-    });
-    
-    audio.addEventListener('suspend', () => {
-      console.log('Audio loading suspended');
-    });
-  };
-
-  const play = async () => {
-    ensureAudio();
-    if (!audio) return;
-    
-    console.log('=== ATTEMPTING TO PLAY AUDIO ===');
-    console.log('Audio src:', audio.src);
-    console.log('Audio ready state:', audio.readyState);
-    console.log('Audio network state:', audio.networkState);
-    
+    let svgText = "";
     try {
-      // Wait more for the audio to be ready
-      let attempts = 0;
-      while (!ready && attempts < 5) {
-        console.log(`Waiting for audio to be ready... attempt ${attempts + 1}`);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        attempts++;
+      const res = await fetch("star.svg", { cache: "no-store" });
+      svgText = await res.text();
+    } catch {
+      return;
+    }
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(svgText, "image/svg+xml");
+    const template = doc.querySelector("svg");
+    if (!template) return;
+
+    const createStarSvg = ({ seed, durScale, beginOffset, idSuffix }) => {
+      const svg = template.cloneNode(true);
+      svg.removeAttribute("width");
+      svg.removeAttribute("height");
+
+      const ids = [
+        "pearlGradient",
+        "pearlSurface",
+        "pearlTexture",
+        "iridescentEffect",
+        "shimmer",
+      ];
+
+      for (const baseId of ids) {
+        const el = svg.querySelector(`#${baseId}`);
+        if (el) el.id = `${baseId}-${idSuffix}`;
       }
-      
-      if (!ready) {
-        console.warn('Audio not ready after 5 attempts, trying to play anyway');
-      }
-      
-      const playPromise = audio.play();
-      console.log('Play promise:', playPromise);
-      
-      await playPromise;
-      
-      // Verificar que realmente está sonando
-      setTimeout(() => {
-        if (checkAudioPlaying()) {
-          playing = true;
-          setLabel();
-          console.log('✅ AUDIO PLAYING SUCCESSFULLY!');
-        } else {
-          console.log('❌ Audio play() succeeded but not actually playing');
-          playing = false;
-          setLabel();
+
+      const refs = svg.querySelectorAll("[fill],[stroke],[filter]");
+      for (const el of refs) {
+        const fill = el.getAttribute("fill");
+        const stroke = el.getAttribute("stroke");
+        const filter = el.getAttribute("filter");
+
+        if (fill && fill.startsWith("url(#")) {
+          const id = fill.slice(5, -1);
+          if (ids.includes(id)) el.setAttribute("fill", `url(#${id}-${idSuffix})`);
         }
-      }, 500);
-      
-    } catch (error) {
-      console.error('❌ PLAY ERROR:', error);
-      console.error('Error name:', error.name);
-      console.error('Error message:', error.message);
-      
-      if (error.name === 'NotAllowedError') {
-        console.log('🔒 Autoplay blocked by browser - user interaction required');
-        alert('🔒 Haz clic en el botón ▶ para reproducir música');
-        if (label) label.textContent = "▶";
-      } else if (error.name === 'NotSupportedError') {
-        console.log('❌ Audio format not supported');
-        alert('❌ Formato de audio no soportado');
-        if (label) label.textContent = "❌";
-      } else {
-        console.log('❌ Other error:', error);
-        if (label) label.textContent = "▶";
+        if (stroke && stroke.startsWith("url(#")) {
+          const id = stroke.slice(5, -1);
+          if (ids.includes(id)) el.setAttribute("stroke", `url(#${id}-${idSuffix})`);
+        }
+        if (filter && filter.startsWith("url(#")) {
+          const id = filter.slice(5, -1);
+          if (ids.includes(id)) el.setAttribute("filter", `url(#${id}-${idSuffix})`);
+        }
       }
-      playing = false;
-      setLabel();
+
+      const turb = svg.querySelector("feTurbulence");
+      if (turb) turb.setAttribute("seed", String(seed));
+
+      const anims = svg.querySelectorAll("animate");
+      for (const a of anims) {
+        const dur = a.getAttribute("dur");
+        if (dur && dur.endsWith("s")) {
+          const n = Number(dur.slice(0, -1));
+          if (!Number.isNaN(n)) a.setAttribute("dur", `${Math.max(0.35, n * durScale)}s`);
+        }
+        a.setAttribute("begin", `${Math.max(0, beginOffset)}s`);
+      }
+
+      return svg;
+    };
+
+    const rand = (min, max) => min + Math.random() * (max - min);
+    const randInt = (min, max) => Math.floor(rand(min, max + 1));
+
+    for (const c of containers) {
+      c.classList.add("stars--js");
+      c.textContent = "";
+
+      const rect = c.getBoundingClientRect();
+      const w = Math.max(1, rect.width);
+      const h = Math.max(1, rect.height);
+      const padding = Math.max(5, Math.min(12, Math.min(w, h) * 0.02));
+      const placed = [];
+
+      const isHero = c.classList.contains("hero__stars");
+      const isFooter = c.classList.contains("footer__stars");
+      const count = isHero ? 26 : isFooter ? 20 : 20;
+
+      for (let i = 0; i < count; i++) {
+        const star = document.createElement("div");
+        star.className = "star";
+
+        const size = randInt(18, 48);
+        const r = size / 2;
+
+        const fits = (x, y) => {
+          for (const p of placed) {
+            const dx = x - p.x;
+            const dy = y - p.y;
+            const min = (p.size / 2) + r + padding;
+            if (dx * dx + dy * dy < min * min) return false;
+          }
+          return true;
+        };
+
+        let x = 0;
+        let y = 0;
+        let ok = false;
+        const maxTries = 90;
+        for (let t = 0; t < maxTries; t++) {
+          // Keep within bounds so the star doesn't clip
+          x = rand(r + 2, w - r - 2);
+          y = rand(r + 2, h - r - 2);
+          if (fits(x, y)) {
+            ok = true;
+            break;
+          }
+        }
+
+        if (!ok) {
+          // Fallback: accept last position to avoid infinite loops on small screens
+          x = rand(r + 2, w - r - 2);
+          y = rand(r + 2, h - r - 2);
+        }
+
+        placed.push({ x, y, size });
+
+        star.style.width = `${size}px`;
+        star.style.height = `${size}px`;
+        star.style.left = `${(x / w) * 100}%`;
+        star.style.top = `${(y / h) * 100}%`;
+        star.style.opacity = "0.40";
+        star.style.mixBlendMode = "screen";
+        star.style.filter = "drop-shadow(0 0 6px rgba(255,255,255,0.45))";
+
+        const svg = createStarSvg({
+          seed: randInt(1, 9999),
+          durScale: rand(0.7, 1.35),
+          beginOffset: rand(0, 2.5),
+          idSuffix: `${Date.now()}-${Math.random().toString(16).slice(2)}-${i}`,
+        });
+
+        star.appendChild(svg);
+        c.appendChild(star);
+      }
     }
   };
 
-  const pause = () => {
-    if (!audio) return;
-    audio.pause();
-    playing = false;
-    setLabel();
-    console.log('Audio paused');
-  };
+  initStars();
 
-  if (toggle) {
-    toggle.addEventListener("click", () => {
-      if (!cfg.audio?.url) {
-        console.log('No audio URL configured');
-        return;
-      }
-      console.log('🎵 Toggle clicked, playing:', playing);
-      playing ? pause() : play();
-    });
-  }
+  // Audio functionality moved to audio-player.js
+  console.log('🎵 Audio functionality handled by audio-player.js');
 
-  // Initialize audio on page load
-  console.log('🎵 Initializing audio...');
-  console.log('🎵 Audio URL:', cfg.audio?.url);
-  
-  if (cfg.audio?.url) {
-    console.log('🎵 Audio URL found, calling ensureAudio...');
-    ensureAudio();
-    
-    // Iniciar monitoreo constante cada segundo
-    setInterval(updateAudioStatus, 1000);
-    
-  } else {
-    console.log('❌ No audio URL configured');
-  }
-
-  // Add a test button click to debug
-  if (toggle) {
-    console.log('✅ Audio toggle button found');
-  } else {
-    console.log('❌ Audio toggle button NOT found');
-  }
-
-  if (cfg.audio?.autoplay) {
-    // Intentar reproducir automáticamente lo antes posible
-    const attemptAutoplay = async () => {
-      console.log('🎵 Attempting autoplay...');
-      try {
-        await play();
-      } catch (error) {
-        console.log('❌ Autoplay failed, waiting for user interaction');
-      }
-    };
-    
-    // Intentar autoplay inmediatamente
-    attemptAutoplay();
-    
-    // También intentar en el primer gesto del usuario
-    const onFirstGesture = () => {
-      console.log('👆 First gesture detected, attempting play');
-      window.removeEventListener("pointerdown", onFirstGesture);
-      window.removeEventListener("keydown", onFirstGesture);
-      window.removeEventListener("touchstart", onFirstGesture);
-      play();
-    };
-    
-    window.addEventListener("pointerdown", onFirstGesture, { once: true });
-    window.addEventListener("keydown", onFirstGesture, { once: true });
-    window.addEventListener("touchstart", onFirstGesture, { once: true });
-  }
-
-  setLabel();
-  console.log('🎵 Audio initialization complete');
+  console.log('App.js initialization complete');
 })();
