@@ -6,18 +6,22 @@ window.INVITACION_CONFIG = {
   },
 
   hero: {
-    kicker: "MIS XV",
+    kicker: "Mis XV",
     name: "Morella",
-    dateShort: "22.08.2026",
+    dateShort: "22-08-2026",
     quote: "Ha llegado el momento de brillar... te espero en mi gran noche llena de sorpresas!!!",
   },
 
   audio: {
-    url: "https://github.com/xv-morella/xv-morella.github.io/raw/refs/heads/main/music.mp3",
-    autoplay: true,
+    url: "https://res.cloudinary.com/dmqgy7lzg/video/upload/v1771953859/music_aawuln.mp3",
+    autoplay: false,
+    welcomeModal: false,  // true = muestra modal de bienvenida, false = sin modal
+    autoMetadata: false, // true = carga metadatos automáticamente, false = manual
   },
 
-  sheets: {
+  playlist: {
+    title: "Música",
+    text: "¿Qué canción no puede faltar?",
     webAppUrl: "https://script.google.com/macros/s/AKfycbydYXEW4CrndIBdgSUOpV9M1JxmdQH2XBQcxV2A2SPdsytyQb-snzuGebE01zQZETA/exec",
   },
 
@@ -65,7 +69,7 @@ window.INVITACION_CONFIG = {
   },
 
   playlist: {
-    title: "Playlist",
+    title: "Música",
     text: "Estamos armando la playlist de la fiesta. ¿Qué canción no puede faltar?",
     spotifyUrl: "https://open.spotify.com/playlist/3BDa5JGiPUM0lLATytcQKE?pt=d36312c5d3f2d7256f5f371563df9de9",
     buttonLabel: "SUGERIR CANCIÓN",
