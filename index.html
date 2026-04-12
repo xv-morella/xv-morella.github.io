@@ -20,20 +20,19 @@
     </div>
 
     <div class="audio-player" id="audioPlayer">
-      <div class="audio-player__controls">
-        <button class="audio audio--play" type="button" id="audioToggle" aria-label="Reproducir música">
-          <span class="audio__label" id="audioLabel">▶</span>
+      <button class="audio-player__toggle" type="button" id="audioToggle" aria-label="Reproducir música">
+        <span class="audio-player__disc" id="audioCover" aria-hidden="true">
+          <span class="audio-player__disc-media" id="audioDiscMedia"></span>
+          <span class="audio-player__disc-media2" id="audioDiscMedia2" aria-hidden="true"></span>
+          <span class="audio-player__disc-hole" aria-hidden="true"></span>
+          <span class="audio-player__disc-gloss" aria-hidden="true"></span>
+        </span>
+        <span class="audio-player__info" aria-hidden="true">
+          <span class="audio-player__title" id="audioTitle">Mi Canción</span>
+          <span class="audio-player__artist" id="audioArtist">Artista</span>
+        </span>
         </button>
-      </div>
-      <div class="audio-player__info" id="audioInfo" style="display: none;">
-        <div class="audio-player__cover" id="audioCover">
-          <div class="audio-player__cover-placeholder">♪</div>
-        </div>
-        <div class="audio-player__details">
-          <div class="audio-player__title" id="audioTitle">Cargando...</div>
-          <div class="audio-player__artist" id="audioArtist">Espera por favor</div>
-        </div>
-      </div>
+      <span class="audio-player__overlay" aria-hidden="true"></span>
     </div>
 
     <div class="page">

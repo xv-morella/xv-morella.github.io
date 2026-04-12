@@ -3,8 +3,11 @@ class AudioPlayer {
     this.audio = document.getElementById('bgAudio');
     this.toggle = document.getElementById('audioToggle');
     this.cover = document.getElementById('audioCover');
+    this.discMedia = document.getElementById('audioDiscMedia');
+    this.discMedia2 = document.getElementById('audioDiscMedia2');
     this.title = document.getElementById('audioTitle');
     this.artist = document.getElementById('audioArtist');
+    this.playerEl = document.getElementById('audioPlayer');
     
     this.playing = false; // Asegurar que inicie en false
     this.ready = false;
@@ -27,14 +30,6 @@ class AudioPlayer {
     this.setupAudioEvents();
     this.loadAudio();
     this.setupIOSUnlock();
-    
-    // Cargar metadatos automáticamente si está configurado
-    if (window.INVITACION_CONFIG?.audio?.autoMetadata) {
-      console.log('🎵 Auto-metadata activado');
-      // Los metadatos se cargarán en loadedmetadata
-    } else {
-      console.log('🎵 Auto-metadata desactivado');
-    }
   }
   
   setupEventListeners() {
@@ -44,29 +39,27 @@ class AudioPlayer {
   setupAudioEvents() {
     this.audio.addEventListener('loadstart', () => {
       console.log('🎵 Cargando audio...');
-      if (window.INVITACION_CONFIG?.audio?.autoMetadata) {
-        this.updateMetadata('Cargando...', 'Por favor espera');
-      }
+      this.updateMetadata('Cargando...', 'Por favor espera');
       // Asegurar estado inicial correcto
       this.playing = false;
       this.updateButton();
+      this.updatePlayingUI();
     });
     
     this.audio.addEventListener('loadedmetadata', () => {
       console.log('🎵 Metadatos cargados');
       this.metadataLoaded = true;
-      
-      if (window.INVITACION_CONFIG?.audio?.autoMetadata) {
+
+      // Auto extraer metadatos si está habilitado en config
+      const autoMetadata = window.INVITACION_CONFIG?.audio?.autoMetadata;
+      if (autoMetadata) {
+        console.log('🎵 Auto-extrayendo metadatos...');
         this.extractMetadata();
-        // Mostrar panel de metadatos si está activado
-        const infoPanel = document.getElementById('audioInfo');
-        if (infoPanel) {
-          infoPanel.style.display = 'flex';
-        }
       }
       // Asegurar estado inicial correcto
       this.playing = false;
       this.updateButton();
+      this.updatePlayingUI();
     });
     
     this.audio.addEventListener('canplaythrough', () => {
@@ -75,6 +68,7 @@ class AudioPlayer {
       // Asegurar estado inicial correcto
       this.playing = false;
       this.updateButton();
+      this.updatePlayingUI();
     });
 
     this.audio.addEventListener('loadeddata', () => {
@@ -82,6 +76,7 @@ class AudioPlayer {
       console.log('✅ Audio cargado (loadeddata)');
       this.playing = false;
       this.updateButton();
+      this.updatePlayingUI();
     });
 
     this.audio.addEventListener('canplay', () => {
@@ -89,18 +84,19 @@ class AudioPlayer {
       console.log('✅ Audio listo para reproducir (canplay)');
       this.playing = false;
       this.updateButton();
+      this.updatePlayingUI();
     });
     
     this.audio.addEventListener('play', () => {
       this.playing = true;
       this.updateButton();
-      this.animateCover();
+      this.updatePlayingUI();
     });
     
     this.audio.addEventListener('pause', () => {
       this.playing = false;
       this.updateButton();
-      this.stopCoverAnimation();
+      this.updatePlayingUI();
     });
     
     this.audio.addEventListener('error', (e) => {
@@ -113,6 +109,11 @@ class AudioPlayer {
         this.extractMetadata();
       }
     });
+  }
+
+  updatePlayingUI() {
+    if (!this.playerEl) return;
+    this.playerEl.classList.toggle('is-playing', !!this.playing);
   }
   
   loadAudio() {
@@ -161,29 +162,36 @@ class AudioPlayer {
   async extractMetadata() {
     if (this.title.dataset.updated === 'true') return;
     
+    console.log('🎵 Extrayendo metadatos de:', this.audio.src);
+    
     try {
       const tags = await this.readId3TagsSafe(this.audio.src);
+      console.log('🎵 Tags encontrados:', tags);
 
       if (tags?.title || tags?.artist) {
         this.updateMetadata(tags.title || 'Mi Canción', tags.artist || 'Artista');
         this.title.dataset.updated = 'true';
+        console.log('🎵 Metadatos actualizados:', tags.title, tags.artist);
       } else {
         const fileName = this.getFileNameFromUrl(this.audio.src);
         const { title, artist } = this.parseFileName(fileName);
         this.updateMetadata(title, artist);
         this.title.dataset.updated = 'true';
+        console.log('🎵 Usando nombre de archivo:', title, artist);
       }
 
       if (tags?.pictureDataUrl) {
         this.updateCover(tags.pictureDataUrl);
         this._hasCover = true;
+        console.log('🎵 Portada encontrada en metadatos');
         return;
       }
 
+      console.log('🎵 Buscando portada externa...');
       this.loadCoverArt();
       
     } catch (error) {
-      console.log('🎵 No se pudieron extraer metadatos, usando defaults');
+      console.log('🎵 Error extrayendo metadatos:', error);
       const fileName = this.getFileNameFromUrl(this.audio.src);
       const { title, artist } = this.parseFileName(fileName);
       this.updateMetadata(title || 'Mi Canción', artist || 'Artista');
@@ -195,36 +203,66 @@ class AudioPlayer {
     return new Promise((resolve) => {
       const lib = window.jsmediatags;
       if (!lib || typeof lib.read !== 'function') {
+        console.log('🎵 jsmediatags no disponible');
         resolve(null);
         return;
       }
 
+      console.log('🎵 Leyendo ID3 tags de:', url);
+
       try {
-        lib.read(url, {
-          onSuccess: (result) => {
-            try {
-              const t = result?.tags || {};
-              const title = t.title ? String(t.title) : '';
-              const artist = t.artist ? String(t.artist) : '';
+        const done = (result) => {
+          try {
+            console.log('🎵 ID3 tags leídos exitosamente');
+            const t = result?.tags || {};
+            const title = t.title ? String(t.title) : '';
+            const artist = t.artist ? String(t.artist) : '';
 
-              let pictureDataUrl = null;
-              const pic = t.picture;
-              if (pic && pic.data && pic.format) {
-                const bytes = new Uint8Array(pic.data);
-                let binary = '';
-                for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-                const base64 = btoa(binary);
-                pictureDataUrl = `data:${pic.format};base64,${base64}`;
-              }
-
-              resolve({ title, artist, pictureDataUrl });
-            } catch {
-              resolve(null);
+            let pictureDataUrl = null;
+            const pic = t.picture;
+            if (pic && pic.data && pic.format) {
+              console.log('🎵 Portada encontrada en ID3 tags');
+              const bytes = new Uint8Array(pic.data);
+              let binary = '';
+              for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+              const base64 = btoa(binary);
+              pictureDataUrl = `data:${pic.format};base64,${base64}`;
             }
-          },
-          onError: () => resolve(null),
-        });
-      } catch {
+
+            resolve({ title, artist, pictureDataUrl });
+          } catch (error) {
+            console.log('🎵 Error procesando ID3 tags:', error);
+            resolve(null);
+          }
+        };
+
+        const fail = (error) => {
+          console.log('🎵 Error leyendo ID3 tags:', error);
+          resolve(null);
+        };
+
+        // Para Cloudinary, intentar primero con fetch para evitar CORS
+        if (url.includes('cloudinary.com')) {
+          fetch(url, { mode: 'cors', cache: 'no-store' })
+            .then((r) => {
+              if (!r.ok) throw new Error('fetch_failed');
+              console.log('🎵 Fetch exitoso, leyendo tags...');
+              return r.arrayBuffer();
+            })
+            .then((buf) => {
+              const blob = new Blob([buf], { type: 'audio/mpeg' });
+              lib.read(blob, { onSuccess: done, onError: fail });
+            })
+            .catch((error) => {
+              console.log('🎵 Fetch falló, intentando directamente:', error);
+              lib.read(url, { onSuccess: done, onError: fail });
+            });
+        } else {
+          // Para otras URLs, leer directamente
+          lib.read(url, { onSuccess: done, onError: fail });
+        }
+      } catch (error) {
+        console.log('🎵 Error en readId3TagsSafe:', error);
         resolve(null);
       }
     });
@@ -290,6 +328,8 @@ class AudioPlayer {
       `${baseName}_art.jpg`,
       `${baseName}_album.jpg`,
       // Usar el ID de Cloudinary si existe
+      `music_aawuln_gkdpjh.jpg`,
+      `music_aawuln_gkdpjh.png`,
       `music_aawuln.jpg`,
       `music_aawuln.png`
     ];
@@ -308,7 +348,8 @@ class AudioPlayer {
         if (cloudName && publicId) {
           const tryPublicId = publicId.replace(/\.(mp3|wav|m4a|ogg)$/i, '');
           const ext = pattern.split('.').pop();
-          coverUrl = `https://res.cloudinary.com/${cloudName}/image/upload/v1771953859/${tryPublicId}.${ext}`;
+          // Usar la misma versión que el audio actual (v1776023124)
+          coverUrl = `https://res.cloudinary.com/${cloudName}/image/upload/v1776023124/${tryPublicId}.${ext}`;
         }
         const img = new Image();
         img.crossOrigin = 'anonymous';
@@ -378,27 +419,21 @@ class AudioPlayer {
   }
   
   updateCover(imageUrl) {
-    if (!this.cover) return;
+    if (!this.discMedia) return;
 
     this._hasCover = true;
-    
-    const img = document.createElement('img');
-    img.src = imageUrl;
-    img.alt = 'Portada del álbum';
-    
-    // Reemplazar placeholder con la imagen
-    const placeholder = this.cover.querySelector('.audio-player__cover-placeholder');
-    if (placeholder) {
-      placeholder.style.display = 'none';
+    const safeUrl = encodeURI(String(imageUrl || '')).replace(/'/g, '%27');
+
+    if (this.discMedia2) {
+      this.discMedia2.style.backgroundImage = `url('${safeUrl}')`;
+      this.discMedia2.style.backgroundSize = 'cover';
+      this.discMedia2.style.backgroundPosition = 'center';
     }
-    
-    // Limpiar imágenes anteriores
-    const existingImg = this.cover.querySelector('img');
-    if (existingImg) {
-      existingImg.remove();
-    }
-    
-    this.cover.appendChild(img);
+
+    this.discMedia.style.backgroundImage =
+      `radial-gradient(circle at center, rgba(0,0,0,0) 0 18%, rgba(0,0,0,0.62) 18% 20%, rgba(0,0,0,0) 20% 100%), url('${safeUrl}')`;
+    this.discMedia.style.backgroundSize = 'cover';
+    this.discMedia.style.backgroundPosition = 'center';
   }
   
   updateButton() {
@@ -406,20 +441,10 @@ class AudioPlayer {
     
     const label = this.toggle.querySelector('#audioLabel');
     if (label) {
-      label.textContent = this.playing ? '▶' : '♫';
+      label.textContent = this.playing ? '❚❚' : '▶';
     }
     
     // No cambiar el color del botón cuando está reproduciendo
-  }
-  
-  animateCover() {
-    if (!this.cover) return;
-    this.cover.style.animation = 'pulse 2s infinite';
-  }
-  
-  stopCoverAnimation() {
-    if (!this.cover) return;
-    this.cover.style.animation = 'none';
   }
 
   fadeVolume(targetVolume, durationMs) {
@@ -472,26 +497,9 @@ class AudioPlayer {
   }
 
   loadMetadata() {
-    if (!this.metadataLoaded) {
-      console.log('🎵 Metadatos no cargados aún');
-      return;
-    }
-    
-    console.log('🎵 Cargando metadatos...');
     this.extractMetadata();
   }
 }
-
-// Agregar animación CSS para la portada
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
-  }
-`;
-document.head.appendChild(style);
 
 // Inicializar el reproductor cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {

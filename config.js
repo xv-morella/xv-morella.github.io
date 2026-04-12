@@ -13,10 +13,10 @@ window.INVITACION_CONFIG = {
   },
 
   audio: {
-    url: "https://res.cloudinary.com/dmqgy7lzg/video/upload/v1771953859/music_aawuln.mp3",
+    url: "https://res.cloudinary.com/dmqgy7lzg/video/upload/v1776023124/music_aawuln_gkdpjh.mp3",
     autoplay: false,
     welcomeModal: false,  // true = muestra modal de bienvenida, false = sin modal
-    autoMetadata: false, // true = carga metadatos automáticamente, false = manual
+    autoMetadata: true, // true = carga metadatos automáticamente, false = manual
   },
 
   playlist: {
