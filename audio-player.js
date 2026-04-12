@@ -16,6 +16,7 @@ class AudioPlayer {
     this.fadeDurationMs = 650;
     this._fadeRaf = null;
     this._hasCover = false;
+    this.coverLoaded = false; // Nueva variable para controlar carga de portada
     
     this.init();
   }
@@ -30,6 +31,7 @@ class AudioPlayer {
     this.setupAudioEvents();
     this.loadAudio();
     this.setupIOSUnlock();
+    this.setupAutoplay();
   }
   
   setupEventListeners() {
@@ -69,6 +71,8 @@ class AudioPlayer {
       this.playing = false;
       this.updateButton();
       this.updatePlayingUI();
+      // Verificar si podemos ocultar la pantalla de carga
+      this.checkReadyToHideLoading();
     });
 
     this.audio.addEventListener('loadeddata', () => {
@@ -77,6 +81,8 @@ class AudioPlayer {
       this.playing = false;
       this.updateButton();
       this.updatePlayingUI();
+      // Verificar si podemos ocultar la pantalla de carga
+      this.checkReadyToHideLoading();
     });
 
     this.audio.addEventListener('canplay', () => {
@@ -85,6 +91,8 @@ class AudioPlayer {
       this.playing = false;
       this.updateButton();
       this.updatePlayingUI();
+      // Verificar si podemos ocultar la pantalla de carga
+      this.checkReadyToHideLoading();
     });
     
     this.audio.addEventListener('play', () => {
@@ -141,22 +149,36 @@ class AudioPlayer {
       if (this.audio.dataset.iosUnlocked === 'true') return;
       this.audio.dataset.iosUnlocked = 'true';
 
+      console.log('🎵 Desbloqueando audio para iOS...');
+      
       const prevVolume = this.audio.volume;
       try {
+        // Crear audio silencioso para desbloquear contexto de audio
+        const silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAAAQAEAAEAfAAAQAQABAAgAZGF0YQAAAAA=');
+        silentAudio.volume = 0;
+        await silentAudio.play();
+        
+        // Desbloquear el audio principal
         this.audio.muted = true;
         this.audio.volume = 0;
         await this.audio.play();
         this.audio.pause();
         this.audio.currentTime = 0;
-      } catch {
+        
+        console.log('🎵 Audio desbloqueado exitosamente');
+      } catch (error) {
+        console.log('🎵 Error al desbloquear audio:', error);
       } finally {
         this.audio.muted = false;
         this.audio.volume = prevVolume;
       }
     };
 
-    document.addEventListener('pointerdown', unlock, { once: true, passive: true });
-    document.addEventListener('touchstart', unlock, { once: true, passive: true });
+    // Múltiples eventos para asegurar desbloqueo
+    const events = ['pointerdown', 'touchstart', 'touchend', 'mousedown', 'keydown'];
+    events.forEach(event => {
+      document.addEventListener(event, unlock, { once: true, passive: true });
+    });
   }
   
   async extractMetadata() {
@@ -410,6 +432,10 @@ class AudioPlayer {
     const dataUrl = canvas.toDataURL('image/png');
     this.updateCover(dataUrl);
     
+    // Marcar como cargada inmediatamente ya que es generada localmente
+    this.coverLoaded = true;
+    this.checkReadyToHideLoading();
+    
     console.log('🎵 Portada generada automáticamente para:', songName);
   }
   
@@ -423,6 +449,20 @@ class AudioPlayer {
 
     this._hasCover = true;
     const safeUrl = encodeURI(String(imageUrl || '')).replace(/'/g, '%27');
+
+    // Crear imagen para verificar carga
+    const img = new Image();
+    img.onload = () => {
+      console.log('🎵 Portada cargada completamente');
+      this.coverLoaded = true;
+      this.checkReadyToHideLoading();
+    };
+    img.onerror = () => {
+      console.log('🎵 Error cargando portada, continuando igual');
+      this.coverLoaded = true; // Marcar como cargada aunque haya error para no bloquear
+      this.checkReadyToHideLoading();
+    };
+    img.src = safeUrl;
 
     if (this.discMedia2) {
       this.discMedia2.style.backgroundImage = `url('${safeUrl}')`;
@@ -498,6 +538,112 @@ class AudioPlayer {
 
   loadMetadata() {
     this.extractMetadata();
+  }
+
+  setupAutoplay() {
+    const autoplay = window.INVITACION_CONFIG?.audio?.autoplay;
+    if (!autoplay) {
+      console.log('🎵 Autoplay deshabilitado');
+      this.hideLoadingScreen();
+      return;
+    }
+
+    console.log('🎵 Configurando autoplay simple...');
+    this.autoplayHandled = false;
+    
+    // Función única de autoplay
+    const handleAutoplay = async () => {
+      if (this.autoplayHandled || this.playing) {
+        console.log('🎵 Autoplay ya manejado o reproduciendo');
+        return;
+      }
+      
+      this.autoplayHandled = true;
+      console.log('🎵 Iniciando reproducción única...');
+      
+      try {
+        // Configurar audio
+        this.audio.loop = true;
+        this.audio.volume = 0;
+        
+        // Intentar reproducir
+        await this.audio.play();
+        
+        // Si funciona, hacer fade-in
+        await this.fadeVolume(this.desiredVolume, 1000);
+        this.playing = true;
+        this.updateButton();
+        this.updatePlayingUI();
+        
+        console.log('✅ Reproducción exitosa');
+        
+      } catch (error) {
+        console.log('❌ Autoplay bloqueado, esperando interacción');
+        this.setupSingleInteraction();
+      }
+      
+      // No ocultar pantalla de carga aquí, esperar a que todo esté listo
+    };
+
+    // Solo un evento de carga
+    this.audio.addEventListener('canplaythrough', handleAutoplay, { once: true });
+    
+    // Timeout de seguridad
+    setTimeout(() => {
+      if (!this.autoplayHandled && !this.playing) {
+        handleAutoplay();
+      }
+    }, 3000);
+  }
+
+  setupSingleInteraction() {
+    console.log('🎵 Configurando interacción única...');
+    
+    const playOnce = async (e) => {
+      if (this.playing) return;
+      
+      e.preventDefault();
+      e.stopPropagation();
+      
+      try {
+        this.audio.loop = true;
+        this.audio.volume = 0;
+        await this.audio.play();
+        await this.fadeVolume(this.desiredVolume, 800);
+        this.playing = true;
+        this.updateButton();
+        this.updatePlayingUI();
+        
+        console.log('✅ Audio iniciado por interacción');
+        
+      } catch (error) {
+        console.log('❌ Error en interacción:', error);
+      }
+    };
+
+    // Solo un listener global
+    document.addEventListener('click', playOnce, { once: true, passive: false });
+    document.addEventListener('touchstart', playOnce, { once: true, passive: false });
+  }
+
+  
+  
+  checkReadyToHideLoading() {
+    // Solo ocultar si el audio está listo Y la portada está cargada
+    if (this.ready && this.coverLoaded) {
+      console.log('🎵 Audio y portada listos, ocultando pantalla de carga');
+      setTimeout(() => {
+        this.hideLoadingScreen();
+      }, 300); // Pequeño delay para asegurar que todo esté renderizado
+    }
+  }
+
+  hideLoadingScreen() {
+    const loadingScreen = document.getElementById('loadingScreen');
+    if (loadingScreen) {
+      loadingScreen.classList.add('hidden');
+      console.log('🎵 Pantalla de carga oculta');
+    }
   }
 }
 
