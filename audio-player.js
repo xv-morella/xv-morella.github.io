@@ -17,6 +17,8 @@ class AudioPlayer {
     this._fadeRaf = null;
     this._hasCover = false;
     this.coverLoaded = false; // Nueva variable para controlar carga de portada
+    this.pageContentReady = false; // Nueva variable para controlar carga del contenido
+    this.loadingTimeout = null; // Timeout de seguridad para la pantalla de carga
     
     this.init();
   }
@@ -32,6 +34,8 @@ class AudioPlayer {
     this.loadAudio();
     this.setupIOSUnlock();
     this.setupAutoplay();
+    this.setupPageLoadMonitoring();
+    this.setupLoadingTimeout();
   }
   
   setupEventListeners() {
@@ -433,9 +437,6 @@ class AudioPlayer {
     this.updateCover(dataUrl);
     
     // Marcar como cargada inmediatamente ya que es generada localmente
-    this.coverLoaded = true;
-    this.checkReadyToHideLoading();
-    
     console.log('🎵 Portada generada automáticamente para:', songName);
   }
   
@@ -458,10 +459,20 @@ class AudioPlayer {
       this.checkReadyToHideLoading();
     };
     img.onerror = () => {
-      console.log('🎵 Error cargando portada, continuando igual');
+      console.log('🎵 Error cargando portada, pero continuando');
       this.coverLoaded = true; // Marcar como cargada aunque haya error para no bloquear
       this.checkReadyToHideLoading();
     };
+    
+    // Timeout de seguridad para la carga de la portada
+    setTimeout(() => {
+      if (!this.coverLoaded) {
+        console.log('🎵 Timeout de carga de portada, continuando');
+        this.coverLoaded = true;
+        this.checkReadyToHideLoading();
+      }
+    }, 5000);
+    
     img.src = safeUrl;
 
     if (this.discMedia2) {
@@ -544,14 +555,20 @@ class AudioPlayer {
     const autoplay = window.INVITACION_CONFIG?.audio?.autoplay;
     if (!autoplay) {
       console.log('🎵 Autoplay deshabilitado');
-      this.hideLoadingScreen();
+      // Iniciar monitoreo de contenido de página aunque no haya autoplay
+      this.setupPageLoadMonitoring();
+      this.setupLoadingTimeout();
+      // Marcar el audio como listo inmediatamente si no hay autoplay
+      this.ready = true;
+      // Generar portada por defecto o cargar existente
+      this.extractMetadata();
       return;
     }
 
-    console.log('🎵 Configurando autoplay simple...');
+    console.log('🎵 Configurando autoplay mejorado...');
     this.autoplayHandled = false;
     
-    // Función única de autoplay
+    // Función mejorada de autoplay con múltiples intentos
     const handleAutoplay = async () => {
       if (this.autoplayHandled || this.playing) {
         console.log('🎵 Autoplay ya manejado o reproduciendo');
@@ -559,90 +576,271 @@ class AudioPlayer {
       }
       
       this.autoplayHandled = true;
-      console.log('🎵 Iniciando reproducción única...');
+      console.log('🎵 Iniciando intento de reproducción automática...');
+      
+      // Esperar un poco más para asegurar que todo esté cargado
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       try {
         // Configurar audio
         this.audio.loop = true;
         this.audio.volume = 0;
         
-        // Intentar reproducir
-        await this.audio.play();
+        // Primer intento de reproducción
+        const playPromise = this.audio.play();
         
-        // Si funciona, hacer fade-in
-        await this.fadeVolume(this.desiredVolume, 1000);
-        this.playing = true;
-        this.updateButton();
-        this.updatePlayingUI();
-        
-        console.log('✅ Reproducción exitosa');
+        if (playPromise !== undefined) {
+          await playPromise;
+          // Si funciona, hacer fade-in
+          await this.fadeVolume(this.desiredVolume, 1000);
+          this.playing = true;
+          this.updateButton();
+          this.updatePlayingUI();
+          
+          console.log('✅ Reproducción automática exitosa');
+        }
         
       } catch (error) {
-        console.log('❌ Autoplay bloqueado, esperando interacción');
-        this.setupSingleInteraction();
+        console.log('❌ Autoplay bloqueado, configurando fallback de interacción');
+        this.setupImprovedInteraction();
       }
       
       // No ocultar pantalla de carga aquí, esperar a que todo esté listo
     };
 
-    // Solo un evento de carga
-    this.audio.addEventListener('canplaythrough', handleAutoplay, { once: true });
+    // Múltiples eventos para asegurar que el autoplay se intente en diferentes momentos
+    const events = ['canplaythrough', 'loadeddata', 'canplay'];
+    events.forEach(event => {
+      this.audio.addEventListener(event, handleAutoplay, { once: true });
+    });
     
-    // Timeout de seguridad
+    // Timeout de seguridad más largo
     setTimeout(() => {
       if (!this.autoplayHandled && !this.playing) {
+        console.log('🎵 Timeout de seguridad, intentando autoplay manual');
         handleAutoplay();
       }
-    }, 3000);
+    }, 5000);
   }
 
-  setupSingleInteraction() {
-    console.log('🎵 Configurando interacción única...');
+  setupImprovedInteraction() {
+    console.log('🎵 Configurando sistema de activación por scroll...');
     
     const playOnce = async (e) => {
       if (this.playing) return;
       
-      e.preventDefault();
-      e.stopPropagation();
+      console.log('🎵 Scroll detectado (' + e.type + '), iniciando audio');
       
       try {
+        // Configurar audio
         this.audio.loop = true;
         this.audio.volume = 0;
+        
+        // Pequeña pausa para asegurar el contexto de audio
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Intentar reproducir
         await this.audio.play();
+        
+        // Si funciona, hacer fade-in
         await this.fadeVolume(this.desiredVolume, 800);
         this.playing = true;
         this.updateButton();
         this.updatePlayingUI();
         
-        console.log('✅ Audio iniciado por interacción');
+        console.log('✅ Audio iniciado exitosamente por scroll');
         
       } catch (error) {
-        console.log('❌ Error en interacción:', error);
+        console.log('❌ Error al iniciar audio por scroll:', error);
+        // Si falla, intentar de nuevo con un volumen más bajo
+        try {
+          this.audio.volume = 0.1;
+          await this.audio.play();
+          await this.fadeVolume(this.desiredVolume, 800);
+          this.playing = true;
+          this.updateButton();
+          this.updatePlayingUI();
+          console.log('✅ Audio iniciado con fallback de volumen bajo');
+        } catch (secondError) {
+          console.log('❌ Falló el intento de fallback');
+        }
       }
     };
 
-    // Solo un listener global
-    document.addEventListener('click', playOnce, { once: true, passive: false });
-    document.addEventListener('touchstart', playOnce, { once: true, passive: false });
+    // Variable para controlar si ya se activó por scroll
+    let scrollActivated = false;
+    
+    // Eventos de scroll para activar audio
+    const setupScrollActivation = () => {
+      // Scroll con rueda del mouse
+      const wheelHandler = (e) => {
+        if (scrollActivated || this.playing) return;
+        
+        scrollActivated = true;
+        console.log('🎵 Scroll con rueda detectado, activando audio');
+        playOnce(e);
+      };
+      
+      // Scroll general (barra de scroll, scroll táctil)
+      const scrollHandler = (e) => {
+        if (scrollActivated || this.playing) return;
+        
+        // Esperar un poco para asegurar que es un scroll intencional
+        setTimeout(() => {
+          if (!this.playing && !scrollActivated) {
+            scrollActivated = true;
+            console.log('🎵 Scroll detectado, activando audio');
+            playOnce(e);
+          }
+        }, 100);
+      };
+      
+      // Agregar listeners de scroll
+      document.addEventListener('wheel', wheelHandler, { 
+        once: true,
+        passive: true,
+        capture: false 
+      });
+      
+      document.addEventListener('scroll', scrollHandler, { 
+        once: false,  // No usar once porque queremos detectar el primer scroll significativo
+        passive: true,
+        capture: false 
+      });
+    };
+    
+    // Listener específico para scroll táctil en móviles
+    const setupTouchScroll = () => {
+      let touchStartY = 0;
+      let hasScrolled = false;
+      
+      const touchStartHandler = (e) => {
+        if (this.playing || scrollActivated) return;
+        touchStartY = e.touches[0].clientY;
+        hasScrolled = false;
+      };
+      
+      const touchMoveHandler = (e) => {
+        if (this.playing || scrollActivated || hasScrolled) return;
+        
+        const touchY = e.touches[0].clientY;
+        const deltaY = Math.abs(touchY - touchStartY);
+        
+        // Si el scroll es significativo (más de 50px), activar audio
+        if (deltaY > 50) {
+          hasScrolled = true;
+          scrollActivated = true;
+          console.log('🎵 Scroll táctil significativo detectado, activando audio');
+          playOnce(e);
+        }
+      };
+      
+      document.addEventListener('touchstart', touchStartHandler, { passive: true });
+      document.addEventListener('touchmove', touchMoveHandler, { passive: true });
+    };
+    
+    // Configurar activación por scroll
+    setupScrollActivation();
+    setupTouchScroll();
+    
+    // El botón de audio seguirá funcionando manualmente como siempre
+    console.log('🎵 Sistema de activación por scroll configurado');
   }
 
   
   
+  setupPageLoadMonitoring() {
+    // Monitorear cuando el contenido de la página está completamente cargado
+    const checkPageReady = () => {
+      const images = document.querySelectorAll('img');
+      const iframes = document.querySelectorAll('iframe');
+      
+      let allLoaded = true;
+      
+      // Verificar imágenes
+      images.forEach(img => {
+        if (!img.complete || img.naturalHeight === 0) {
+          allLoaded = false;
+        }
+      });
+      
+      // Verificar iframes (maps, countdown, etc.)
+      iframes.forEach(iframe => {
+        try {
+          // Los iframes pueden tardar más, darles más tiempo
+          if (!iframe.src || iframe.src === 'about:blank') {
+            allLoaded = false;
+          }
+        } catch (e) {
+          // Si hay error de CORS, asumir que está cargando
+          allLoaded = false;
+        }
+      });
+      
+      // Verificar que el DOM esté completamente renderizado
+      const documentReady = document.readyState === 'complete';
+      
+      if (documentReady && allLoaded) {
+        this.pageContentReady = true;
+        console.log('🎵 Contenido de la página completamente cargado');
+        this.checkReadyToHideLoading();
+      } else {
+        // Seguir verificando
+        setTimeout(checkPageReady, 500);
+      }
+    };
+    
+    // Iniciar verificación después de un breve retraso
+    setTimeout(checkPageReady, 1000);
+    
+    // También verificar cuando el DOM esté completamente cargado
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(checkPageReady, 500);
+      });
+    }
+  }
+  
+  setupLoadingTimeout() {
+    // Timeout de seguridad para no quedar atrapado en la pantalla de carga
+    this.loadingTimeout = setTimeout(() => {
+      console.log('🎵 Timeout de seguridad de pantalla de carga, forzando ocultamiento');
+      this.hideLoadingScreen();
+    }, 15000); // 15 segundos máximo
+  }
+  
   checkReadyToHideLoading() {
-    // Solo ocultar si el audio está listo Y la portada está cargada
-    if (this.ready && this.coverLoaded) {
-      console.log('🎵 Audio y portada listos, ocultando pantalla de carga');
+    // Solo ocultar si: audio está listo AND portada está cargada AND contenido de página está listo
+    if (this.ready && this.coverLoaded && this.pageContentReady) {
+      console.log('🎵 Todo está listo - audio, portada y contenido de página');
+      
+      // Limpiar timeout de seguridad
+      if (this.loadingTimeout) {
+        clearTimeout(this.loadingTimeout);
+        this.loadingTimeout = null;
+      }
+      
+      // Pequeño delay adicional para asegurar renderizado
       setTimeout(() => {
         this.hideLoadingScreen();
-      }, 300); // Pequeño delay para asegurar que todo esté renderizado
+      }, 300);
+    } else {
+      console.log('🎵 Esperando que todo esté listo:', {
+        audioReady: this.ready,
+        coverLoaded: this.coverLoaded,
+        pageContentReady: this.pageContentReady
+      });
     }
   }
 
   hideLoadingScreen() {
     const loadingScreen = document.getElementById('loadingScreen');
-    if (loadingScreen) {
+    if (loadingScreen && !loadingScreen.classList.contains('hidden')) {
       loadingScreen.classList.add('hidden');
       console.log('🎵 Pantalla de carga oculta');
+      
+      // Disparar evento personalizado para notificar que la carga completó
+      window.dispatchEvent(new CustomEvent('appLoaded'));
     }
   }
 }
