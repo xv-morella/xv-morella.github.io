@@ -624,127 +624,43 @@ class AudioPlayer {
   }
 
   setupImprovedInteraction() {
-    console.log('🎵 Configurando sistema de activación por scroll...');
+    console.log('🎵 Configurando activación por scroll simple...');
     
-    const playOnce = async (e) => {
-      if (this.playing) return;
+    let activated = false;
+    
+    const startAudio = async () => {
+      if (activated) return;
+      activated = true;
       
-      console.log('🎵 Scroll detectado (' + e.type + '), iniciando audio');
+      console.log('🎵 Scroll detectado - iniciando audio');
+      
+      // Remover listener
+      document.removeEventListener('scroll', onScroll);
       
       try {
-        // Configurar audio
         this.audio.loop = true;
         this.audio.volume = 0;
-        
-        // Pequeña pausa para asegurar el contexto de audio
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Intentar reproducir
         await this.audio.play();
-        
-        // Si funciona, hacer fade-in
-        await this.fadeVolume(this.desiredVolume, 800);
+        await this.fadeVolume(this.desiredVolume, 1000);
         this.playing = true;
         this.updateButton();
         this.updatePlayingUI();
-        
-        console.log('✅ Audio iniciado exitosamente por scroll');
-        
+        console.log('✅ Audio activado');
       } catch (error) {
-        console.log('❌ Error al iniciar audio por scroll:', error);
-        // Si falla, intentar de nuevo con un volumen más bajo
-        try {
-          this.audio.volume = 0.1;
-          await this.audio.play();
-          await this.fadeVolume(this.desiredVolume, 800);
-          this.playing = true;
-          this.updateButton();
-          this.updatePlayingUI();
-          console.log('✅ Audio iniciado con fallback de volumen bajo');
-        } catch (secondError) {
-          console.log('❌ Falló el intento de fallback');
-        }
+        console.log('❌ Error:', error);
       }
     };
-
-    // Variable para controlar si ya se activó por scroll
-    let scrollActivated = false;
     
-    // Eventos de scroll para activar audio
-    const setupScrollActivation = () => {
-      // Scroll con rueda del mouse
-      const wheelHandler = (e) => {
-        if (scrollActivated || this.playing) return;
-        
-        scrollActivated = true;
-        console.log('🎵 Scroll con rueda detectado, activando audio');
-        playOnce(e);
-      };
-      
-      // Scroll general (barra de scroll, scroll táctil)
-      const scrollHandler = (e) => {
-        if (scrollActivated || this.playing) return;
-        
-        // Esperar un poco para asegurar que es un scroll intencional
-        setTimeout(() => {
-          if (!this.playing && !scrollActivated) {
-            scrollActivated = true;
-            console.log('🎵 Scroll detectado, activando audio');
-            playOnce(e);
-          }
-        }, 100);
-      };
-      
-      // Agregar listeners de scroll
-      document.addEventListener('wheel', wheelHandler, { 
-        once: true,
-        passive: true,
-        capture: false 
-      });
-      
-      document.addEventListener('scroll', scrollHandler, { 
-        once: false,  // No usar once porque queremos detectar el primer scroll significativo
-        passive: true,
-        capture: false 
-      });
+    const onScroll = () => {
+      if (!activated) {
+        startAudio();
+      }
     };
     
-    // Listener específico para scroll táctil en móviles
-    const setupTouchScroll = () => {
-      let touchStartY = 0;
-      let hasScrolled = false;
-      
-      const touchStartHandler = (e) => {
-        if (this.playing || scrollActivated) return;
-        touchStartY = e.touches[0].clientY;
-        hasScrolled = false;
-      };
-      
-      const touchMoveHandler = (e) => {
-        if (this.playing || scrollActivated || hasScrolled) return;
-        
-        const touchY = e.touches[0].clientY;
-        const deltaY = Math.abs(touchY - touchStartY);
-        
-        // Si el scroll es significativo (más de 50px), activar audio
-        if (deltaY > 50) {
-          hasScrolled = true;
-          scrollActivated = true;
-          console.log('🎵 Scroll táctil significativo detectado, activando audio');
-          playOnce(e);
-        }
-      };
-      
-      document.addEventListener('touchstart', touchStartHandler, { passive: true });
-      document.addEventListener('touchmove', touchMoveHandler, { passive: true });
-    };
+    // UNICO listener para todos los dispositivos
+    document.addEventListener('scroll', onScroll, { passive: true, once: true });
     
-    // Configurar activación por scroll
-    setupScrollActivation();
-    setupTouchScroll();
-    
-    // El botón de audio seguirá funcionando manualmente como siempre
-    console.log('🎵 Sistema de activación por scroll configurado');
+    console.log('🎵 Activación por scroll configurada');
   }
 
   

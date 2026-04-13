@@ -26,8 +26,8 @@ window.INVITACION_CONFIG = {
   },
 
   event: {
-    start: "2026-08-22T21:00:00Z",
-    durationMinutes: 510,
+    start: "2026-08-22T21:00:00-03:00",
+    durationMinutes: 540,
     countdownEmbedUrl: "",
     whenTitle: "",
     dayName: "Sábado",
@@ -44,7 +44,7 @@ window.INVITACION_CONFIG = {
     name: "Lazaro Eventos",
     address: "Dorrego 486, Bahía Blanca",
     mapsUrl: "https://maps.app.goo.gl/GAWec2y21EVka4mS6?g_st=aw",
-    mapsEmbedUrl: "https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=Lazaro+Eventos,Dorrego+486,Bahia+Blanca&zoom=15&maptype=roadmap",
+    mapsEmbedUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3112.976009826707!2d-62.25845502416831!3d-38.71835977176288!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x95eda35f02b17d63%3A0x3013742887d6a1c9!2sLazaro%20Eventos!5e0!3m2!1ses-419!2sar!4v1776042604356!5m2!1ses-419!2sar",
     mapsLinkLabel: "Como llegar",
   },
 

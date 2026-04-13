@@ -172,8 +172,16 @@
 
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const isAndroid = /Android/.test(navigator.userAgent);
+      
+      console.log('📅 Plataforma detectada:', {
+        isIOS,
+        isAndroid,
+        userAgent: navigator.userAgent,
+        isDesktop: !isIOS && !isAndroid
+      });
 
       if (isIOS) {
+        console.log('📅 Abriendo Calendario iOS...');
         // Build .ics for iOS Calendar (webcal) using UTC to avoid timezone shifts
         const uid = `${start.getTime()}-${Math.random().toString(16).slice(2)}@invitacion`;
         const ics =
@@ -190,13 +198,13 @@
           `SUMMARY:${String(title).replace(/\n/g, " ")}\r\n` +
           `DESCRIPTION:${String(description).replace(/\n/g, "\\n")}\r\n` +
           `LOCATION:${String(location).replace(/\n/g, " ")}\r\n` +
-          `X-GOOGLE-ALLOW-INVITE-NO:TRUE\r\n` +
-          `X-GOOGLE-ALLOW-SEE-GUESTS:NO\r\n` +
-          `BEGIN:VALARM\r\n` +
-          `ACTION:DISPLAY\r\n` +
-          `DESCRIPTION:Event reminder\r\n` +
-          `TRIGGER:-P1D\r\n` +
-          `END:VALARM\r\n` +
+          "X-GOOGLE-ALLOW-INVITE-NO:TRUE\r\n" +
+          "X-GOOGLE-ALLOW-SEE-GUESTS:NO\r\n" +
+          "BEGIN:VALARM\r\n" +
+          "ACTION:DISPLAY\r\n" +
+          "DESCRIPTION:Event reminder\r\n" +
+          "TRIGGER:-P1D\r\n" +
+          "END:VALARM\r\n" +
           "END:VEVENT\r\n" +
           "END:VCALENDAR\r\n";
         const icsBlob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
@@ -207,6 +215,7 @@
         // Clean up
         setTimeout(() => URL.revokeObjectURL(icsUrl), 5000);
       } else if (isAndroid) {
+        console.log('📅 Abriendo Google Calendar Android...');
         // Google Calendar for Android: use local time to avoid timezone shift
         const formatDate = (d) => d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0") + "T" + String(d.getHours()).padStart(2, "0") + String(d.getMinutes()).padStart(2, "0") + String(d.getSeconds()).padStart(2, "0");
         const gcalUrl = new URL("https://calendar.google.com/calendar/render");
@@ -217,9 +226,11 @@
         if (location) gcalUrl.searchParams.set("location", location);
         gcalUrl.searchParams.set("trp", "false");
         gcalUrl.searchParams.set("rem", "1440");
+        console.log('📅 URL Google Calendar:', gcalUrl.toString());
         window.open(gcalUrl.toString(), "_blank", "noopener,noreferrer");
       } else {
-        // Desktop: Google Calendar with local time
+        // Desktop: Siempre abrir Google Calendar
+        console.log('📅 Abriendo Google Calendar Desktop...');
         const formatDate = (d) => d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0") + "T" + String(d.getHours()).padStart(2, "0") + String(d.getMinutes()).padStart(2, "0") + String(d.getSeconds()).padStart(2, "0");
         const gcalUrl = new URL("https://calendar.google.com/calendar/render");
         gcalUrl.searchParams.set("action", "TEMPLATE");
@@ -229,6 +240,7 @@
         if (location) gcalUrl.searchParams.set("location", location);
         gcalUrl.searchParams.set("trp", "false");
         gcalUrl.searchParams.set("rem", "1440");
+        console.log('📅 URL Google Calendar Desktop:', gcalUrl.toString());
         window.open(gcalUrl.toString(), "_blank", "noopener,noreferrer");
       }
     });
