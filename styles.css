@@ -517,7 +517,6 @@ body {
   border-radius: 999px;
   position: relative;
   overflow: hidden;
-  transform: translateZ(0);
   box-shadow:
     0 10px 26px rgba(0,0,0,0.55),
     inset 0 0 0 1px rgba(255,255,255,0.16);
@@ -638,7 +637,7 @@ body {
 }
 
 .audio-player.is-playing .audio-player__disc {
-  animation: discSpin 3.6s linear infinite;
+  animation: discSpin 6s linear infinite;
   animation-play-state: running;
 }
 
@@ -647,7 +646,7 @@ body {
 .audio-player.is-playing .audio-player__disc-hole,
 .audio-player.is-playing .audio-player__disc-media,
 .audio-player.is-playing .audio-player__disc-media2 {
-  animation: discSpin 3.6s linear infinite;
+  animation: discSpin 6s linear infinite;
   animation-play-state: running;
 }
 
@@ -658,7 +657,7 @@ body {
 .audio-player .audio-player__disc-hole,
 .audio-player .audio-player__disc-media,
 .audio-player .audio-player__disc-media2 {
-  animation: discSpin 3.6s linear infinite;
+  animation: discSpin 6s linear infinite;
   animation-play-state: paused;
 }
 

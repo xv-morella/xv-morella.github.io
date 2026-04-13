@@ -555,198 +555,151 @@ class AudioPlayer {
     const autoplay = window.INVITACION_CONFIG?.audio?.autoplay;
     if (!autoplay) {
       console.log('🎵 Autoplay deshabilitado');
-      // Iniciar monitoreo de contenido de página aunque no haya autoplay
       this.setupPageLoadMonitoring();
       this.setupLoadingTimeout();
-      // Marcar el audio como listo inmediatamente si no hay autoplay
       this.ready = true;
-      // Generar portada por defecto o cargar existente
       this.extractMetadata();
       return;
     }
 
-    console.log('🎵 Configurando autoplay mejorado...');
+    // Detectar si es Android
+    const isAndroid = /Android/.test(navigator.userAgent);
+    
+    if (isAndroid) {
+      console.log('🎵 Android detectado - usando sistema especial');
+      this.setupAndroidAutoplay();
+    } else {
+      console.log('🎵 iOS/Desktop detectado - usando autoplay normal');
+      this.setupNormalAutoplay();
+    }
+  }
+  
+  setupNormalAutoplay() {
     this.autoplayHandled = false;
     
-    // Función mejorada de autoplay con múltiples intentos
     const handleAutoplay = async () => {
-      if (this.autoplayHandled || this.playing) {
-        console.log('🎵 Autoplay ya manejado o reproduciendo');
-        return;
-      }
+      if (this.autoplayHandled || this.playing) return;
       
       this.autoplayHandled = true;
-      console.log('🎵 Iniciando intento de reproducción automática...');
+      console.log('🎵 Iniciando autoplay normal...');
       
-      // Esperar un poco más para asegurar que todo esté cargado
       await new Promise(resolve => setTimeout(resolve, 500));
       
       try {
-        // Configurar audio
         this.audio.loop = true;
         this.audio.volume = 0;
-        
-        // Primer intento de reproducción
         const playPromise = this.audio.play();
         
         if (playPromise !== undefined) {
           await playPromise;
-          // Si funciona, hacer fade-in
           await this.fadeVolume(this.desiredVolume, 1000);
           this.playing = true;
           this.updateButton();
           this.updatePlayingUI();
-          
-          console.log('✅ Reproducción automática exitosa');
+          console.log('✅ Autoplay normal exitoso');
         }
-        
       } catch (error) {
-        console.log('❌ Autoplay bloqueado, configurando fallback de interacción');
-        this.setupImprovedInteraction();
+        console.log('❌ Autoplay normal bloqueado');
       }
-      
-      // No ocultar pantalla de carga aquí, esperar a que todo esté listo
     };
 
-    // Múltiples eventos para asegurar que el autoplay se intente en diferentes momentos
     const events = ['canplaythrough', 'loadeddata', 'canplay'];
     events.forEach(event => {
       this.audio.addEventListener(event, handleAutoplay, { once: true });
     });
     
-    // Timeout de seguridad más largo
     setTimeout(() => {
       if (!this.autoplayHandled && !this.playing) {
-        console.log('🎵 Timeout de seguridad, intentando autoplay manual');
         handleAutoplay();
       }
     }, 5000);
   }
-
-  setupImprovedInteraction() {
-    console.log('🎵 Configurando activación por interacciones válidas...');
+  
+  setupAndroidAutoplay() {
+    console.log('🎵 Configurando autoplay especial para Android...');
     
-    let activated = false;
+    let attemptCount = 0;
+    const maxAttempts = 3;
     
-    const startAudio = async () => {
-      if (activated) return;
-      activated = true;
+    const tryAutoplay = async () => {
+      if (attemptCount >= maxAttempts || this.playing) {
+        console.log('🎵 Máximos intentos de autoplay Android alcanzados');
+        return;
+      }
       
-      console.log('🎵 Interacción válida detectada - iniciando audio');
-      
-      // Remover todos los listeners
-      document.removeEventListener('wheel', onWheel);
-      document.removeEventListener('touchmove', onTouchMove);
-      document.removeEventListener('click', onClick);
+      attemptCount++;
+      console.log(`🎵 Intento ${attemptCount} de autoplay Android...`);
       
       try {
+        // Configurar para Android
         this.audio.loop = true;
         this.audio.volume = 0;
+        this.audio.muted = true; // Iniciar silenciado
+        
         await this.audio.play();
-        await this.fadeVolume(this.desiredVolume, 1000);
+        
+        // Esperar un poco y activar volumen
+        await new Promise(resolve => setTimeout(resolve, 100));
+        this.audio.muted = false;
+        await this.fadeVolume(this.desiredVolume, 800);
+        
         this.playing = true;
         this.updateButton();
         this.updatePlayingUI();
-        console.log('✅ Audio activado');
+        
+        console.log('✅ Autoplay Android exitoso');
+        
       } catch (error) {
-        console.log('❌ Error:', error);
+        console.log(`❌ Intento ${attemptCount} fallido:`, error);
+        
+        if (attemptCount < maxAttempts) {
+          // Esperar y reintentar
+          setTimeout(tryAutoplay, 2000);
+        }
       }
     };
     
-    const onWheel = (e) => {
-      console.log('🎵 Wheel event válido detectado, deltaY:', e.deltaY);
-      if (!activated && Math.abs(e.deltaY) > 0) {
-        startAudio();
+    // Esperar a que el audio esté listo
+    const events = ['canplaythrough', 'loadeddata', 'canplay'];
+    events.forEach(event => {
+      this.audio.addEventListener(event, tryAutoplay, { once: true });
+    });
+    
+    // Timeout de seguridad
+    setTimeout(() => {
+      if (!this.playing) {
+        tryAutoplay();
       }
-    };
-    
-    const onTouchMove = (e) => {
-      console.log('🎵 Touch move válido detectado');
-      if (!activated) {
-        startAudio();
-      }
-    };
-    
-    const onClick = (e) => {
-      console.log('🎵 Click válido detectado');
-      if (!activated) {
-        startAudio();
-      }
-    };
-    
-    // Solo eventos que el navegador considera interacciones válidas
-    console.log('🎵 Agregando listener wheel (válido)...');
-    document.addEventListener('wheel', onWheel, { passive: true });
-    
-    console.log('🎵 Agregando listener touchmove (válido)...');
-    document.addEventListener('touchmove', onTouchMove, { passive: true });
-    
-    console.log('🎵 Agregando listener click (válido)...');
-    document.addEventListener('click', onClick, { once: true });
-    
-    console.log('🎵 Activación por interacciones válidas configurada');
+    }, 3000);
   }
+
 
   
   
   setupPageLoadMonitoring() {
-    // Monitorear cuando el contenido de la página está completamente cargado
-    const checkPageReady = () => {
-      const images = document.querySelectorAll('img');
-      const iframes = document.querySelectorAll('iframe');
-      
-      let allLoaded = true;
-      
-      // Verificar imágenes
-      images.forEach(img => {
-        if (!img.complete || img.naturalHeight === 0) {
-          allLoaded = false;
-        }
-      });
-      
-      // Verificar iframes (maps, countdown, etc.)
-      iframes.forEach(iframe => {
-        try {
-          // Los iframes pueden tardar más, darles más tiempo
-          if (!iframe.src || iframe.src === 'about:blank') {
-            allLoaded = false;
-          }
-        } catch (e) {
-          // Si hay error de CORS, asumir que está cargando
-          allLoaded = false;
-        }
-      });
-      
-      // Verificar que el DOM esté completamente renderizado
-      const documentReady = document.readyState === 'complete';
-      
-      if (documentReady && allLoaded) {
-        this.pageContentReady = true;
-        console.log('🎵 Contenido de la página completamente cargado');
-        this.checkReadyToHideLoading();
-      } else {
-        // Seguir verificando
-        setTimeout(checkPageReady, 500);
-      }
+    // Simplemente esperar a que la página cargue
+    const onPageLoad = () => {
+      this.pageContentReady = true;
+      this.checkReadyToHideLoading();
     };
     
-    // Iniciar verificación después de un breve retraso
-    setTimeout(checkPageReady, 1000);
-    
-    // También verificar cuando el DOM esté completamente cargado
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(checkPageReady, 500);
-      });
+    if (document.readyState === 'complete') {
+      onPageLoad();
+    } else {
+      window.addEventListener('load', onPageLoad);
     }
   }
   
   setupLoadingTimeout() {
+    // Detectar si es iOS para ajustar timeout
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const timeoutMs = isIOS ? 8000 : 15000; // 8 segundos en iOS, 15 en otros
+    
     // Timeout de seguridad para no quedar atrapado en la pantalla de carga
     this.loadingTimeout = setTimeout(() => {
-      console.log('🎵 Timeout de seguridad de pantalla de carga, forzando ocultamiento');
+      console.log('🎵 Timeout de seguridad de pantalla de carga (iOS:', isIOS, '), forzando ocultamiento');
       this.hideLoadingScreen();
-    }, 15000); // 15 segundos máximo
+    }, timeoutMs);
   }
   
   checkReadyToHideLoading() {
