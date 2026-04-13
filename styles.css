@@ -181,6 +181,10 @@ body {
   pointer-events: none;
 }
 
+body.welcome-open .audio-player {
+  filter: blur(6px);
+}
+
 .welcome__card {
   width: min(520px, 100%);
   border-radius: 18px;
@@ -517,6 +521,11 @@ body {
   border-radius: 999px;
   position: relative;
   overflow: hidden;
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+  mask-image: radial-gradient(circle, #fff, #000);
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   box-shadow:
     0 10px 26px rgba(0,0,0,0.55),
     inset 0 0 0 1px rgba(255,255,255,0.16);
@@ -535,6 +544,9 @@ body {
   background-size: cover;
   background-position: center;
   filter: saturate(1.08) contrast(1.05);
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .audio-player__disc-media2 {
@@ -546,6 +558,9 @@ body {
   opacity: 0.22;
   mix-blend-mode: screen;
   filter: blur(0.2px) saturate(1.15) contrast(1.05);
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .audio-player__overlay {

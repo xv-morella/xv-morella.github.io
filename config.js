@@ -14,8 +14,8 @@ window.INVITACION_CONFIG = {
 
   audio: {
     url: "https://res.cloudinary.com/dmqgy7lzg/video/upload/v1776023124/music_aawuln_gkdpjh.mp3",
-    autoplay: true,
-    welcomeModal: false,  // true = muestra modal de bienvenida, false = sin modal
+    autoplay: false,
+    welcomeModal: true,  // true = muestra modal de bienvenida, false = sin modal
     autoMetadata: true, // true = carga metadatos automáticamente, false = manual
   },
 

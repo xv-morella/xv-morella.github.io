@@ -19,7 +19,12 @@ class AudioPlayer {
     this.coverLoaded = false; // Nueva variable para controlar carga de portada
     this.pageContentReady = false; // Nueva variable para controlar carga del contenido
     this.loadingTimeout = null; // Timeout de seguridad para la pantalla de carga
-    
+    this.autoplayHandled = false;
+    this._autoplayInFlight = false;
+    this._androidAutoplayAttemptCount = 0;
+    this._androidAutoplayMaxAttempts = 3;
+    this._userGestureAutoplayBound = false;
+
     this.init();
   }
   
@@ -34,8 +39,46 @@ class AudioPlayer {
     this.loadAudio();
     this.setupIOSUnlock();
     this.setupAutoplay();
+    this.setupLifecycleAudioGuards();
     this.setupPageLoadMonitoring();
     this.setupLoadingTimeout();
+  }
+
+  get isAudioActuallyReady() {
+    if (!this.audio) return false;
+    // HAVE_FUTURE_DATA (3) es un buen umbral para empezar a reproducir sin “intentar a lo loco”
+    return this.ready || this.audio.readyState >= 3;
+  }
+
+  waitForAudioReady(timeoutMs = 8000) {
+    if (!this.audio) return Promise.resolve(false);
+    if (this.isAudioActuallyReady) return Promise.resolve(true);
+
+    return new Promise((resolve) => {
+      let settled = false;
+      const settle = (ok) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        resolve(ok);
+      };
+
+      const onReady = () => settle(true);
+      const events = ['canplaythrough', 'loadeddata', 'canplay'];
+      events.forEach((ev) => this.audio.addEventListener(ev, onReady, { once: true }));
+
+      const t = setTimeout(() => settle(this.isAudioActuallyReady), timeoutMs);
+
+      const cleanup = () => {
+        clearTimeout(t);
+        events.forEach((ev) => {
+          try {
+            this.audio.removeEventListener(ev, onReady);
+          } catch {
+          }
+        });
+      };
+    });
   }
   
   setupEventListeners() {
@@ -47,7 +90,7 @@ class AudioPlayer {
       console.log('🎵 Cargando audio...');
       this.updateMetadata('Cargando...', 'Por favor espera');
       // Asegurar estado inicial correcto
-      this.playing = false;
+      if (!this.playing) this.playing = false;
       this.updateButton();
       this.updatePlayingUI();
     });
@@ -63,7 +106,7 @@ class AudioPlayer {
         this.extractMetadata();
       }
       // Asegurar estado inicial correcto
-      this.playing = false;
+      if (!this.playing) this.playing = false;
       this.updateButton();
       this.updatePlayingUI();
     });
@@ -71,10 +114,11 @@ class AudioPlayer {
     this.audio.addEventListener('canplaythrough', () => {
       this.ready = true;
       console.log('✅ Audio listo para reproducir');
-      // Asegurar estado inicial correcto
-      this.playing = false;
-      this.updateButton();
-      this.updatePlayingUI();
+      // No pisar el estado si ya está reproduciendo
+      if (!this.playing) {
+        this.updateButton();
+        this.updatePlayingUI();
+      }
       // Verificar si podemos ocultar la pantalla de carga
       this.checkReadyToHideLoading();
     });
@@ -82,9 +126,10 @@ class AudioPlayer {
     this.audio.addEventListener('loadeddata', () => {
       this.ready = true;
       console.log('✅ Audio cargado (loadeddata)');
-      this.playing = false;
-      this.updateButton();
-      this.updatePlayingUI();
+      if (!this.playing) {
+        this.updateButton();
+        this.updatePlayingUI();
+      }
       // Verificar si podemos ocultar la pantalla de carga
       this.checkReadyToHideLoading();
     });
@@ -92,9 +137,10 @@ class AudioPlayer {
     this.audio.addEventListener('canplay', () => {
       this.ready = true;
       console.log('✅ Audio listo para reproducir (canplay)');
-      this.playing = false;
-      this.updateButton();
-      this.updatePlayingUI();
+      if (!this.playing) {
+        this.updateButton();
+        this.updatePlayingUI();
+      }
       // Verificar si podemos ocultar la pantalla de carga
       this.checkReadyToHideLoading();
     });
@@ -555,122 +601,59 @@ class AudioPlayer {
     const autoplay = window.INVITACION_CONFIG?.audio?.autoplay;
     if (!autoplay) {
       console.log('🎵 Autoplay deshabilitado');
-      this.setupPageLoadMonitoring();
-      this.setupLoadingTimeout();
       this.ready = true;
       this.extractMetadata();
       return;
     }
 
-    // Detectar si es Android
-    const isAndroid = /Android/.test(navigator.userAgent);
-    
-    if (isAndroid) {
-      console.log('🎵 Android detectado - usando sistema especial');
-      this.setupAndroidAutoplay();
-    } else {
-      console.log('🎵 iOS/Desktop detectado - usando autoplay normal');
-      this.setupNormalAutoplay();
-    }
+    // Autoplay global: por simplicidad, lo tratamos como deshabilitado.
+    // La reproducción debe ocurrir solo por interacción del usuario (modal o botón).
+    console.log('🎵 Autoplay configurado pero deshabilitado por compatibilidad');
+    this.ready = true;
+    this.extractMetadata();
   }
-  
-  setupNormalAutoplay() {
-    this.autoplayHandled = false;
-    
-    const handleAutoplay = async () => {
-      if (this.autoplayHandled || this.playing) return;
-      
-      this.autoplayHandled = true;
-      console.log('🎵 Iniciando autoplay normal...');
-      
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      try {
-        this.audio.loop = true;
-        this.audio.volume = 0;
-        const playPromise = this.audio.play();
-        
-        if (playPromise !== undefined) {
-          await playPromise;
-          await this.fadeVolume(this.desiredVolume, 1000);
-          this.playing = true;
-          this.updateButton();
-          this.updatePlayingUI();
-          console.log('✅ Autoplay normal exitoso');
+
+  setupLifecycleAudioGuards() {
+    if (!this.audio) return;
+
+    const stopFadeAndNormalizeVolume = () => {
+      if (this._fadeRaf) {
+        cancelAnimationFrame(this._fadeRaf);
+        this._fadeRaf = null;
+      }
+
+      // Si quedó en 0 durante un fade, normalizar.
+      if (!this.playing) {
+        try {
+          this.audio.muted = false;
+          this.audio.volume = this.desiredVolume;
+        } catch {
         }
-      } catch (error) {
-        console.log('❌ Autoplay normal bloqueado');
+      } else {
+        // Si está reproduciendo pero por algún motivo quedó silenciado/0, recuperarlo
+        try {
+          if (this.audio.muted) this.audio.muted = false;
+          if (this.audio.volume === 0) this.audio.volume = this.desiredVolume;
+        } catch {
+        }
       }
     };
 
-    const events = ['canplaythrough', 'loadeddata', 'canplay'];
-    events.forEach(event => {
-      this.audio.addEventListener(event, handleAutoplay, { once: true });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        stopFadeAndNormalizeVolume();
+      } else {
+        stopFadeAndNormalizeVolume();
+      }
     });
-    
-    setTimeout(() => {
-      if (!this.autoplayHandled && !this.playing) {
-        handleAutoplay();
-      }
-    }, 5000);
-  }
-  
-  setupAndroidAutoplay() {
-    console.log('🎵 Configurando autoplay especial para Android...');
-    
-    let attemptCount = 0;
-    const maxAttempts = 3;
-    
-    const tryAutoplay = async () => {
-      if (attemptCount >= maxAttempts || this.playing) {
-        console.log('🎵 Máximos intentos de autoplay Android alcanzados');
-        return;
-      }
-      
-      attemptCount++;
-      console.log(`🎵 Intento ${attemptCount} de autoplay Android...`);
-      
-      try {
-        // Configurar para Android
-        this.audio.loop = true;
-        this.audio.volume = 0;
-        this.audio.muted = true; // Iniciar silenciado
-        
-        await this.audio.play();
-        
-        // Esperar un poco y activar volumen
-        await new Promise(resolve => setTimeout(resolve, 100));
-        this.audio.muted = false;
-        await this.fadeVolume(this.desiredVolume, 800);
-        
-        this.playing = true;
-        this.updateButton();
-        this.updatePlayingUI();
-        
-        console.log('✅ Autoplay Android exitoso');
-        
-      } catch (error) {
-        console.log(`❌ Intento ${attemptCount} fallido:`, error);
-        
-        if (attemptCount < maxAttempts) {
-          // Esperar y reintentar
-          setTimeout(tryAutoplay, 2000);
-        }
-      }
-    };
-    
-    // Esperar a que el audio esté listo
-    const events = ['canplaythrough', 'loadeddata', 'canplay'];
-    events.forEach(event => {
-      this.audio.addEventListener(event, tryAutoplay, { once: true });
+
+    // iOS/Android: pagehide/pageshow suelen disparar en navegación del browser
+    window.addEventListener('pagehide', () => {
+      stopFadeAndNormalizeVolume();
     });
-    
-    // Timeout de seguridad
-    setTimeout(() => {
-      if (!this.playing) {
-        tryAutoplay();
-      }
-    }, 3000);
+    window.addEventListener('pageshow', () => {
+      stopFadeAndNormalizeVolume();
+    });
   }
 
 

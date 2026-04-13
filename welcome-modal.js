@@ -13,6 +13,10 @@
 
   const closeModal = () => {
     modal.classList.add("welcome--hidden");
+    try {
+      document.body.classList.remove('welcome-open');
+    } catch {
+    }
     setTimeout(() => {
       modal.style.display = "none";
     }, 280);
@@ -23,6 +27,10 @@
   // Always show modal on page load if enabled
   modal.style.display = "grid";
   modal.classList.remove("welcome--hidden");
+  try {
+    document.body.classList.add('welcome-open');
+  } catch {
+  }
 
   yesBtn.addEventListener("click", async () => {
     closeModal();
