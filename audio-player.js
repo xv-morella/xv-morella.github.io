@@ -624,7 +624,7 @@ class AudioPlayer {
   }
 
   setupImprovedInteraction() {
-    console.log('🎵 Configurando activación por scroll simple...');
+    console.log('🎵 Configurando activación por interacciones válidas...');
     
     let activated = false;
     
@@ -632,10 +632,12 @@ class AudioPlayer {
       if (activated) return;
       activated = true;
       
-      console.log('🎵 Scroll detectado - iniciando audio');
+      console.log('🎵 Interacción válida detectada - iniciando audio');
       
-      // Remover listener
-      document.removeEventListener('scroll', onScroll);
+      // Remover todos los listeners
+      document.removeEventListener('wheel', onWheel);
+      document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('click', onClick);
       
       try {
         this.audio.loop = true;
@@ -651,16 +653,38 @@ class AudioPlayer {
       }
     };
     
-    const onScroll = () => {
+    const onWheel = (e) => {
+      console.log('🎵 Wheel event válido detectado, deltaY:', e.deltaY);
+      if (!activated && Math.abs(e.deltaY) > 0) {
+        startAudio();
+      }
+    };
+    
+    const onTouchMove = (e) => {
+      console.log('🎵 Touch move válido detectado');
       if (!activated) {
         startAudio();
       }
     };
     
-    // UNICO listener para todos los dispositivos
-    document.addEventListener('scroll', onScroll, { passive: true, once: true });
+    const onClick = (e) => {
+      console.log('🎵 Click válido detectado');
+      if (!activated) {
+        startAudio();
+      }
+    };
     
-    console.log('🎵 Activación por scroll configurada');
+    // Solo eventos que el navegador considera interacciones válidas
+    console.log('🎵 Agregando listener wheel (válido)...');
+    document.addEventListener('wheel', onWheel, { passive: true });
+    
+    console.log('🎵 Agregando listener touchmove (válido)...');
+    document.addEventListener('touchmove', onTouchMove, { passive: true });
+    
+    console.log('🎵 Agregando listener click (válido)...');
+    document.addEventListener('click', onClick, { once: true });
+    
+    console.log('🎵 Activación por interacciones válidas configurada');
   }
 
   
