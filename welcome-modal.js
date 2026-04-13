@@ -33,8 +33,19 @@
   }
 
   yesBtn.addEventListener("click", async () => {
-    closeModal();
     const p = getPlayer();
+    
+    // Ensure iOS unlock first (needed for both Safari and Chrome on iOS)
+    if (p && typeof p.ensureIOSUnlocked === "function") {
+      try {
+        await p.ensureIOSUnlocked();
+      } catch {
+        // ignore
+      }
+    }
+    
+    closeModal();
+    
     // This click counts as user gesture, so play should succeed.
     if (p && typeof p.togglePlay === "function") {
       try {

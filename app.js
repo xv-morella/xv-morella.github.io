@@ -157,7 +157,7 @@
   const calendarLink = $("calendarLink");
   if (calendarLink) {
     calendarLink.href = "#";
-    calendarLink.addEventListener("click", (e) => {
+    calendarLink.addEventListener("click", async (e) => {
       e.preventDefault();
       const startIso = cfg.event?.start;
       const start = startIso ? new Date(startIso) : null;
@@ -172,10 +172,12 @@
 
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const isAndroid = /Android/.test(navigator.userAgent);
+      const isChromeIOS = isIOS && /CriOS/.test(navigator.userAgent);
       
       console.log('📅 Plataforma detectada:', {
         isIOS,
         isAndroid,
+        isChromeIOS,
         userAgent: navigator.userAgent,
         isDesktop: !isIOS && !isAndroid
       });
