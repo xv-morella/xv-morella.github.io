@@ -25,6 +25,9 @@ class AudioPlayer {
     this._androidAutoplayMaxAttempts = 3;
     this._userGestureAutoplayBound = false;
 
+    this._iosUnlockPromise = null;
+    this._iosUnlocking = false;
+
     this.init();
   }
   
@@ -197,37 +200,60 @@ class AudioPlayer {
     const unlock = async () => {
       if (!this.audio) return;
       if (this.audio.dataset.iosUnlocked === 'true') return;
-      this.audio.dataset.iosUnlocked = 'true';
 
+      this._iosUnlocking = true;
       console.log('🎵 Desbloqueando audio para iOS...');
-      
+
+      const prevMuted = !!this.audio.muted;
       const prevVolume = this.audio.volume;
+
       try {
         // Crear audio silencioso para desbloquear contexto de audio
         const silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAAAQAEAAEAfAAAQAQABAAgAZGF0YQAAAAA=');
         silentAudio.volume = 0;
         await silentAudio.play();
-        
-        // Desbloquear el audio principal
+
+        // Desbloquear el audio principal sin romper una reproducción en curso
+        const wasPlaying = !this.audio.paused;
         this.audio.muted = true;
         this.audio.volume = 0;
         await this.audio.play();
-        this.audio.pause();
-        this.audio.currentTime = 0;
-        
+
+        if (!wasPlaying) {
+          this.audio.pause();
+          this.audio.currentTime = 0;
+        }
+
+        this.audio.dataset.iosUnlocked = 'true';
         console.log('🎵 Audio desbloqueado exitosamente');
       } catch (error) {
         console.log('🎵 Error al desbloquear audio:', error);
       } finally {
-        this.audio.muted = false;
-        this.audio.volume = prevVolume;
+        try {
+          this.audio.muted = prevMuted;
+          this.audio.volume = prevVolume;
+        } catch {
+        }
+        this._iosUnlocking = false;
       }
+    };
+
+    this.ensureIOSUnlocked = async () => {
+      if (!this.audio) return;
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (!isIOS) return;
+      if (this.audio.dataset.iosUnlocked === 'true') return;
+      if (this._iosUnlockPromise) return this._iosUnlockPromise;
+      this._iosUnlockPromise = unlock().finally(() => {
+        this._iosUnlockPromise = null;
+      });
+      return this._iosUnlockPromise;
     };
 
     // Múltiples eventos para asegurar desbloqueo
     const events = ['pointerdown', 'touchstart', 'touchend', 'mousedown', 'keydown'];
     events.forEach(event => {
-      document.addEventListener(event, unlock, { once: true, passive: true });
+      document.addEventListener(event, () => this.ensureIOSUnlocked(), { once: true, passive: true });
     });
   }
   
@@ -581,7 +607,11 @@ class AudioPlayer {
       this.audio.volume = this.desiredVolume;
     } else {
       try {
+        if (typeof this.ensureIOSUnlocked === 'function') {
+          await this.ensureIOSUnlocked();
+        }
         this.audio.volume = 0;
+        this.audio.muted = false;
         await this.audio.play();
         await this.fadeVolume(this.desiredVolume, this.fadeDurationMs);
       } catch (error) {

@@ -182,7 +182,7 @@
 
       if (isIOS) {
         console.log('📅 Abriendo Calendario iOS...');
-        // Build .ics for iOS Calendar (webcal) using UTC to avoid timezone shifts
+        // Build .ics for iOS Calendar using UTC to avoid timezone shifts
         const uid = `${start.getTime()}-${Math.random().toString(16).slice(2)}@invitacion`;
         const ics =
           "BEGIN:VCALENDAR\r\n" +
@@ -207,13 +207,21 @@
           "END:VALARM\r\n" +
           "END:VEVENT\r\n" +
           "END:VCALENDAR\r\n";
+
+        // iOS Safari no maneja bien webcal:// con blob: URLs.
+        // Intentar abrir el .ics directamente para que iOS lo ofrezca para importar.
         const icsBlob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
         const icsUrl = URL.createObjectURL(icsBlob);
-        // Open via webcal protocol to add to iOS Calendar
-        const webcalUrl = icsUrl.replace(/^http:/, "webcal:").replace(/^https:/, "webcal:");
-        window.location.href = webcalUrl;
-        // Clean up
-        setTimeout(() => URL.revokeObjectURL(icsUrl), 5000);
+
+        // Intentar abrir directamente (sin download) para que iOS lo interprete
+        try {
+          window.open(icsUrl, '_blank');
+        } catch {
+          // Fallback: location.href
+          window.location.href = icsUrl;
+        }
+
+        setTimeout(() => URL.revokeObjectURL(icsUrl), 8000);
       } else if (isAndroid) {
         console.log('📅 Abriendo Google Calendar Android...');
         // Google Calendar for Android: use local time to avoid timezone shift
