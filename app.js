@@ -174,7 +174,7 @@
       const isAndroid = /Android/.test(navigator.userAgent);
       const isChromeIOS = isIOS && /CriOS/.test(navigator.userAgent);
       
-      console.log('📅 Plataforma detectada:', {
+      console.log('Plataforma detectada:', {
         isIOS,
         isAndroid,
         isChromeIOS,
@@ -182,8 +182,22 @@
         isDesktop: !isIOS && !isAndroid
       });
 
-      if (isIOS) {
-        console.log('📅 Abriendo Calendario iOS...');
+      // Chrome iOS no soporta calendario nativo, usar Google Calendar
+      if (isChromeIOS) {
+        console.log('Chrome iOS detectado - usando Google Calendar...');
+        const formatDate = (d) => d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0") + "T" + String(d.getHours()).padStart(2, "0") + String(d.getMinutes()).padStart(2, "0") + String(d.getSeconds()).padStart(2, "0");
+        const gcalUrl = new URL("https://calendar.google.com/calendar/render");
+        gcalUrl.searchParams.set("action", "TEMPLATE");
+        gcalUrl.searchParams.set("text", title);
+        gcalUrl.searchParams.set("dates", `${formatDate(start)}/${formatDate(end)}`);
+        if (description) gcalUrl.searchParams.set("details", description);
+        if (location) gcalUrl.searchParams.set("location", location);
+        gcalUrl.searchParams.set("trp", "false");
+        gcalUrl.searchParams.set("rem", "1440");
+        console.log('URL Google Calendar Chrome iOS:', gcalUrl.toString());
+        window.open(gcalUrl.toString(), "_blank", "noopener,noreferrer");
+      } else if (isIOS) {
+        console.log('Abriendo Calendario iOS...');
         // Build .ics for iOS Calendar using UTC to avoid timezone shifts
         const uid = `${start.getTime()}-${Math.random().toString(16).slice(2)}@invitacion`;
         const ics =

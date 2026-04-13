@@ -221,17 +221,16 @@ class AudioPlayer {
 
         if (!wasPlaying) {
           this.audio.pause();
-          this.audio.currentTime = 0;
         }
 
         this.audio.dataset.iosUnlocked = 'true';
-        console.log('🎵 Audio desbloqueado exitosamente');
+        console.log('¡Audio desbloqueado exitosamente');
       } catch (error) {
-        console.log('🎵 Error al desbloquear audio:', error);
+        console.log('Error al desbloquear audio:', error);
       } finally {
         try {
-          this.audio.muted = prevMuted;
-          this.audio.volume = prevVolume;
+          this.audio.muted = false;
+          this.audio.volume = this.desiredVolume;
         } catch {
         }
         this._iosUnlocking = false;
