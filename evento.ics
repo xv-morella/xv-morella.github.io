@@ -5,8 +5,8 @@ CALSCALE:GREGORIAN
 METHOD:PUBLISH
 BEGIN:VEVENT
 UID:morella-xv-2026@invitacion
-DTSTART:20260822T210000Z
-DTEND:20260823T050000Z
+DTSTART:20260823T000000Z
+DTEND:20260823T080000Z
 SUMMARY:Morella XV
 DESCRIPTION:Te invitamos a celebrar mis 15 años\n\nEspero que puedas acompañarme en esta noche tan especial.
 LOCATION:Lazaro Eventos - Dorrego 486
