@@ -232,11 +232,18 @@
           "END:VCALENDAR\r\n";
 
         const icsBlob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
-        const icsUrl = URL.createObjectURL(icsBlob);
+        const icsUrl = URL.createObjectURL(icsUrl);
 
-        window.location.href = icsUrl;
-
-        setTimeout(() => URL.revokeObjectURL(icsUrl), 8000);
+        const a = document.createElement('a');
+        a.href = icsUrl;
+        a.download = 'evento.ics';
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(icsUrl);
+        }, 8000);
       } else if (isAndroid) {
         console.log('📅 Abriendo Google Calendar Android...');
         // Google Calendar for Android: use local time to avoid timezone shift

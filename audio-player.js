@@ -330,7 +330,6 @@ class AudioPlayer {
           resolve(null);
         };
 
-        // Para Cloudinary, intentar primero con fetch para evitar CORS
         if (url.includes('cloudinary.com')) {
           fetch(url, { mode: 'cors', cache: 'no-store' })
             .then((r) => {
@@ -347,7 +346,6 @@ class AudioPlayer {
               lib.read(url, { onSuccess: done, onError: fail });
             });
         } else {
-          // Para otras URLs, leer directamente
           lib.read(url, { onSuccess: done, onError: fail });
         }
       } catch (error) {
@@ -362,15 +360,11 @@ class AudioPlayer {
   }
   
   parseFileName(fileName) {
-    // Para Cloudinary, el nombre está en la URL antes de la extensión
-    // Ej: music_aawuln.mp3 -> Music
     const nameWithoutExt = fileName.replace(/\.(mp3|wav|m4a|ogg)$/i, '');
     
-    // Limpiar caracteres especiales y números aleatorios de Cloudinary
-    let cleanName = nameWithoutExt.replace(/_[a-zA-Z0-9]+$/, ''); // Remover sufijo _random
-    cleanName = cleanName.replace(/[-_]/g, ' '); // Reemplazar guiones y guiones bajos
+    let cleanName = nameWithoutExt.replace(/_[a-zA-Z0-9]+$/, '');
+    cleanName = cleanName.replace(/[-_]/g, ' ');
     
-    // Capitalizar palabras
     const words = cleanName.split(' ').map(word => 
       word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
     ).filter(word => word.length > 0);
@@ -382,7 +376,6 @@ class AudioPlayer {
       };
     }
     
-    // Si solo hay una palabra, usarla como título
     if (words.length === 1) {
       return {
         title: words[0],
@@ -390,33 +383,26 @@ class AudioPlayer {
       };
     }
     
-    // Intentar separar artista y título si hay múltiples palabras
-    // Para el caso de "music_aawuln", interpretamos como "Music"
     return {
       title: words.join(' '),
-      artist: 'Morella XV' // Usar el nombre de la fiesta como artista
+      artist: 'Morella XV'
     };
   }
   
   async loadCoverArt() {
     if (this._hasCover) return;
-    // Para Cloudinary, intentar diferentes patrones de portada
     const audioUrl = this.audio.src;
     const fileName = this.getFileNameFromUrl(audioUrl);
     const baseName = fileName.replace(/\.(mp3|wav|m4a|ogg)$/i, '');
     
-    // Patrones de portada para intentar con Cloudinary
     const coverPatterns = [
-      // Mismo nombre que el audio pero con extensión de imagen
       `${baseName}.jpg`,
       `${baseName}.jpeg`,
       `${baseName}.png`,
       `${baseName}.webp`,
-      // Patrones comunes
       `${baseName}_cover.jpg`,
       `${baseName}_art.jpg`,
       `${baseName}_album.jpg`,
-      // Usar el ID de Cloudinary si existe
       `music_aawuln_gkdpjh.jpg`,
       `music_aawuln_gkdpjh.png`,
       `music_aawuln.jpg`,
@@ -465,41 +451,36 @@ class AudioPlayer {
       }
     }
     
-    // Si no se encuentra portada, usar una generada con el nombre
     this.generateDefaultCover(baseName);
   }
   
   generateDefaultCover(songName) {
-    // Crear una portada por defecto con el nombre de la canción
     const canvas = document.createElement('canvas');
     canvas.width = 300;
     canvas.height = 300;
     const ctx = canvas.getContext('2d');
     
-    // Gradiente de fondo
     const gradient = ctx.createLinearGradient(0, 0, 300, 300);
     gradient.addColorStop(0, '#667eea');
     gradient.addColorStop(1, '#764ba2');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, 300, 300);
     
-    // Icono de música
     ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
     ctx.font = 'bold 80px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('♪', 150, 120);
     
-    // Nombre de la canción
     ctx.fillStyle = 'white';
     ctx.font = 'bold 24px Arial';
     ctx.fillText(songName.replace(/_[a-zA-Z0-9]+$/, '').toUpperCase(), 150, 200);
     
-    // Convertir a URL
     const dataUrl = canvas.toDataURL('image/png');
     this.updateCover(dataUrl);
     
-    // Marcar como cargada inmediatamente ya que es generada localmente
+    this.coverLoaded = true;
+    this.checkReadyToHideLoading();
     console.log('🎵 Portada generada automáticamente para:', songName);
   }
   
@@ -517,25 +498,18 @@ class AudioPlayer {
 
     // Crear imagen para verificar carga
     const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.decoding = 'async';
     img.onload = () => {
       console.log('🎵 Portada cargada completamente');
       this.coverLoaded = true;
       this.checkReadyToHideLoading();
     };
     img.onerror = () => {
-      console.log('🎵 Error cargando portada, pero continuando');
-      this.coverLoaded = true; // Marcar como cargada aunque haya error para no bloquear
-      this.checkReadyToHideLoading();
+      console.log('🎵 Error cargando portada, generando por defecto inmediatamente');
+      const baseName = this.getFileNameFromUrl(this.audio.src).replace(/\.(mp3|wav|m4a|ogg)$/i, '');
+      this.generateDefaultCover(baseName);
     };
-    
-    // Timeout de seguridad para la carga de la portada
-    setTimeout(() => {
-      if (!this.coverLoaded) {
-        console.log('🎵 Timeout de carga de portada, continuando');
-        this.coverLoaded = true;
-        this.checkReadyToHideLoading();
-      }
-    }, 5000);
     
     if (!safeUrl) {
       this.coverLoaded = true;
@@ -555,6 +529,14 @@ class AudioPlayer {
       `radial-gradient(circle at center, rgba(0,0,0,0) 0 18%, rgba(0,0,0,0.62) 18% 20%, rgba(0,0,0,0) 20% 100%), url('${safeUrl}')`;
     this.discMedia.style.backgroundSize = 'cover';
     this.discMedia.style.backgroundPosition = 'center';
+
+    setTimeout(() => {
+      if (!this.coverLoaded) {
+        console.log('🎵 Timeout de carga de portada, generando por defecto');
+        const baseName = this.getFileNameFromUrl(this.audio.src).replace(/\.(mp3|wav|m4a|ogg)$/i, '');
+        this.generateDefaultCover(baseName);
+      }
+    }, 3000);
   }
   
   updateButton() {
