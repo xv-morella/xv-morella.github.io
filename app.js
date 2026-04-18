@@ -231,44 +231,7 @@
           "END:VEVENT\r\n" +
           "END:VCALENDAR\r\n";
 
-        const icsBase64 = btoa(unescape(encodeURIComponent(ics)));
-        const dataUrl = `data:text/calendar;base64,${icsBase64}`;
-        const webcalUrl = `webcal://data:text/calendar;base64,${icsBase64}`;
-
-        const a = document.createElement('a');
-        a.href = dataUrl;
-        a.download = 'evento.ics';
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-          try {
-            document.body.removeChild(a);
-          } catch {}
-        }, 300);
-
-        setTimeout(() => {
-          let opened = false;
-          try {
-            opened = window.open(webcalUrl, '_blank');
-          } catch {}
-          if (!opened) {
-            window.location.href = webcalUrl;
-          }
-        }, 500);
-
-        setTimeout(() => {
-          const formatDate = (d) => d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0") + "T" + String(d.getHours()).padStart(2, "0") + String(d.getMinutes()).padStart(2, "0") + String(d.getSeconds()).padStart(2, "0");
-          const gcalUrl = new URL("https://calendar.google.com/calendar/render");
-          gcalUrl.searchParams.set("action", "TEMPLATE");
-          gcalUrl.searchParams.set("text", title);
-          gcalUrl.searchParams.set("dates", `${formatDate(start)}/${formatDate(end)}`);
-          if (description) gcalUrl.searchParams.set("details", description);
-          if (location) gcalUrl.searchParams.set("location", location);
-          gcalUrl.searchParams.set("trp", "false");
-          gcalUrl.searchParams.set("rem", "1440");
-          window.open(gcalUrl.toString(), "_blank", "noopener,noreferrer");
-        }, 2000);
+        window.location.href = 'evento.ics';
       } else if (isAndroid) {
         console.log('📅 Abriendo Google Calendar Android...');
         const formatDate = (d) => d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0") + "T" + String(d.getHours()).padStart(2, "0") + String(d.getMinutes()).padStart(2, "0") + String(d.getSeconds()).padStart(2, "0");
