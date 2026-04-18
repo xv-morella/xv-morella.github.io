@@ -203,21 +203,7 @@
         isDesktop: !isIOS && !isAndroid
       });
 
-      // Chrome iOS no soporta calendario nativo, usar Google Calendar
-      if (isChromeIOS) {
-        console.log('Chrome iOS detectado - usando Google Calendar...');
-        const formatDate = (d) => d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0") + "T" + String(d.getHours()).padStart(2, "0") + String(d.getMinutes()).padStart(2, "0") + String(d.getSeconds()).padStart(2, "0");
-        const gcalUrl = new URL("https://calendar.google.com/calendar/render");
-        gcalUrl.searchParams.set("action", "TEMPLATE");
-        gcalUrl.searchParams.set("text", title);
-        gcalUrl.searchParams.set("dates", `${formatDate(start)}/${formatDate(end)}`);
-        if (description) gcalUrl.searchParams.set("details", description);
-        if (location) gcalUrl.searchParams.set("location", location);
-        gcalUrl.searchParams.set("trp", "false");
-        gcalUrl.searchParams.set("rem", "1440");
-        console.log('URL Google Calendar Chrome iOS:', gcalUrl.toString());
-        window.open(gcalUrl.toString(), "_blank", "noopener,noreferrer");
-      } else if (isIOS) {
+      if (isIOS) {
         console.log('Abriendo Calendario iOS...');
         // Build .ics for iOS Calendar using UTC to avoid timezone shifts
         const uid = `${start.getTime()}-${Math.random().toString(16).slice(2)}@invitacion`;
@@ -245,18 +231,10 @@
           "END:VEVENT\r\n" +
           "END:VCALENDAR\r\n";
 
-        // iOS Safari no maneja bien webcal:// con blob: URLs.
-        // Intentar abrir el .ics directamente para que iOS lo ofrezca para importar.
         const icsBlob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
         const icsUrl = URL.createObjectURL(icsBlob);
 
-        // Intentar abrir directamente (sin download) para que iOS lo interprete
-        try {
-          window.open(icsUrl, '_blank');
-        } catch {
-          // Fallback: location.href
-          window.location.href = icsUrl;
-        }
+        window.location.href = icsUrl;
 
         setTimeout(() => URL.revokeObjectURL(icsUrl), 8000);
       } else if (isAndroid) {
@@ -304,14 +282,24 @@
         if (isIOSDevice() || isAndroidDevice()) {
           e.preventDefault();
           const appUrl = buildMapsAppUrl({ address: cfg.venue?.address, mapsUrl: cfg.venue?.mapsUrl });
-          // Forzar navegación en la misma pestaña para que el SO capture el esquema.
-          window.location.href = appUrl;
+          let opened = null;
+          try {
+            opened = window.open(appUrl, "_blank", "noopener,noreferrer");
+          } catch {
+          }
+          if (!opened) {
+            window.location.href = appUrl;
+          }
 
           // Fallback (iOS): si maps:// no está permitido, abrir Apple Maps web.
           if (isIOSDevice()) {
             setTimeout(() => {
               // Si el usuario canceló, igual le damos opción web.
-              window.location.href = `https://maps.apple.com/?q=${encodeURIComponent(String(cfg.venue?.address || "").trim() || "Destino")}`;
+              try {
+                window.open(`https://maps.apple.com/?q=${encodeURIComponent(String(cfg.venue?.address || "").trim() || "Destino")}`, "_blank", "noopener,noreferrer");
+              } catch {
+                window.location.href = `https://maps.apple.com/?q=${encodeURIComponent(String(cfg.venue?.address || "").trim() || "Destino")}`;
+              }
             }, 700);
           }
         }
