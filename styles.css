@@ -532,7 +532,7 @@ body.welcome-open .audio-player {
   background:
     radial-gradient(circle at 35% 30%, rgba(255,255,255,0.16), transparent 40%),
     radial-gradient(circle at 65% 70%, rgba(0,0,0,0.55), transparent 55%),
-    linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    linear-gradient(135deg, #2a2a2a 0%, #000000 100%);
 }
 
 .audio-player__disc-media {
@@ -540,7 +540,7 @@ body.welcome-open .audio-player {
   inset: -5px;
   background:
     radial-gradient(circle at center, rgba(0,0,0,0) 0 18%, rgba(0,0,0,0.62) 18% 20%, rgba(0,0,0,0) 20% 100%),
-    linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    linear-gradient(135deg, #2a2a2a 0%, #000000 100%);
   background-size: cover;
   background-position: center;
   filter: saturate(1.08) contrast(1.05);
