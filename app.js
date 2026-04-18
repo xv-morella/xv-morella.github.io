@@ -233,15 +233,29 @@
 
         const icsBase64 = btoa(unescape(encodeURIComponent(ics)));
         const dataUrl = `data:text/calendar;base64,${icsBase64}`;
+        const webcalUrl = `webcal://data:text/calendar;base64,${icsBase64}`;
 
-        let opened = false;
-        try {
-          opened = window.open(dataUrl, '_blank');
-        } catch {
-        }
-        if (!opened) {
-          window.location.href = dataUrl;
-        }
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = 'evento.ics';
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          try {
+            document.body.removeChild(a);
+          } catch {}
+        }, 300);
+
+        setTimeout(() => {
+          let opened = false;
+          try {
+            opened = window.open(webcalUrl, '_blank');
+          } catch {}
+          if (!opened) {
+            window.location.href = webcalUrl;
+          }
+        }, 500);
 
         setTimeout(() => {
           const formatDate = (d) => d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0") + "T" + String(d.getHours()).padStart(2, "0") + String(d.getMinutes()).padStart(2, "0") + String(d.getSeconds()).padStart(2, "0");
@@ -254,7 +268,7 @@
           gcalUrl.searchParams.set("trp", "false");
           gcalUrl.searchParams.set("rem", "1440");
           window.open(gcalUrl.toString(), "_blank", "noopener,noreferrer");
-        }, 1500);
+        }, 2000);
       } else if (isAndroid) {
         console.log('📅 Abriendo Google Calendar Android...');
         const formatDate = (d) => d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0") + "T" + String(d.getHours()).padStart(2, "0") + String(d.getMinutes()).padStart(2, "0") + String(d.getSeconds()).padStart(2, "0");
