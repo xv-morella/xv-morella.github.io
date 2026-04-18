@@ -231,36 +231,32 @@
           "END:VEVENT\r\n" +
           "END:VCALENDAR\r\n";
 
-        const icsBlob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
-        const icsUrl = URL.createObjectURL(icsUrl);
+        const icsBase64 = btoa(unescape(encodeURIComponent(ics)));
+        const dataUrl = `data:text/calendar;base64,${icsBase64}`;
 
-        const a = document.createElement('a');
-        a.href = icsUrl;
-        a.download = 'evento.ics';
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        a.click();
+        let opened = false;
+        try {
+          opened = window.open(dataUrl, '_blank');
+        } catch {
+        }
+        if (!opened) {
+          window.location.href = dataUrl;
+        }
+
         setTimeout(() => {
-          document.body.removeChild(a);
-          URL.revokeObjectURL(icsUrl);
-        }, 8000);
+          const formatDate = (d) => d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0") + "T" + String(d.getHours()).padStart(2, "0") + String(d.getMinutes()).padStart(2, "0") + String(d.getSeconds()).padStart(2, "0");
+          const gcalUrl = new URL("https://calendar.google.com/calendar/render");
+          gcalUrl.searchParams.set("action", "TEMPLATE");
+          gcalUrl.searchParams.set("text", title);
+          gcalUrl.searchParams.set("dates", `${formatDate(start)}/${formatDate(end)}`);
+          if (description) gcalUrl.searchParams.set("details", description);
+          if (location) gcalUrl.searchParams.set("location", location);
+          gcalUrl.searchParams.set("trp", "false");
+          gcalUrl.searchParams.set("rem", "1440");
+          window.open(gcalUrl.toString(), "_blank", "noopener,noreferrer");
+        }, 1500);
       } else if (isAndroid) {
         console.log('📅 Abriendo Google Calendar Android...');
-        // Google Calendar for Android: use local time to avoid timezone shift
-        const formatDate = (d) => d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0") + "T" + String(d.getHours()).padStart(2, "0") + String(d.getMinutes()).padStart(2, "0") + String(d.getSeconds()).padStart(2, "0");
-        const gcalUrl = new URL("https://calendar.google.com/calendar/render");
-        gcalUrl.searchParams.set("action", "TEMPLATE");
-        gcalUrl.searchParams.set("text", title);
-        gcalUrl.searchParams.set("dates", `${formatDate(start)}/${formatDate(end)}`);
-        if (description) gcalUrl.searchParams.set("details", description);
-        if (location) gcalUrl.searchParams.set("location", location);
-        gcalUrl.searchParams.set("trp", "false");
-        gcalUrl.searchParams.set("rem", "1440");
-        console.log('📅 URL Google Calendar:', gcalUrl.toString());
-        window.open(gcalUrl.toString(), "_blank", "noopener,noreferrer");
-      } else {
-        // Desktop: Siempre abrir Google Calendar
-        console.log('📅 Abriendo Google Calendar Desktop...');
         const formatDate = (d) => d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0") + "T" + String(d.getHours()).padStart(2, "0") + String(d.getMinutes()).padStart(2, "0") + String(d.getSeconds()).padStart(2, "0");
         const gcalUrl = new URL("https://calendar.google.com/calendar/render");
         gcalUrl.searchParams.set("action", "TEMPLATE");
