@@ -4,12 +4,12 @@ PRODID:-//Morella XV//Evento//ES
 CALSCALE:GREGORIAN
 METHOD:PUBLISH
 BEGIN:VEVENT
-UID:morella-xv-2025@invitacion
-DTSTART:20250920T210000Z
-DTEND:20250921T050000Z
+UID:morella-xv-2026@invitacion
+DTSTART:20260822T210000Z
+DTEND:20260823T050000Z
 SUMMARY:Morella XV
 DESCRIPTION:Te invitamos a celebrar mis 15 años\n\nEspero que puedas acompañarme en esta noche tan especial.
-LOCATION:Salón de Eventos
+LOCATION:Lazaro Eventos - Dorrego 486
 STATUS:CONFIRMED
 SEQUENCE:0
 TRANSP:OPAQUE
