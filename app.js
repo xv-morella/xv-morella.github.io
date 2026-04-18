@@ -231,7 +231,17 @@
           "END:VEVENT\r\n" +
           "END:VCALENDAR\r\n";
 
-        window.location.href = 'evento.ics';
+        let opened = false;
+        try {
+          opened = window.open('evento.ics', '_blank', 'noopener,noreferrer');
+        } catch {}
+        if (!opened) {
+          window.location.href = 'evento.ics';
+        }
+
+        setTimeout(() => {
+          window.location.href = 'webcal://evento.ics';
+        }, 800);
       } else if (isAndroid) {
         console.log('📅 Abriendo Google Calendar Android...');
         const formatDate = (d) => d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0") + "T" + String(d.getHours()).padStart(2, "0") + String(d.getMinutes()).padStart(2, "0") + String(d.getSeconds()).padStart(2, "0");
