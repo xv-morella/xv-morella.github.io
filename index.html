@@ -8,14 +8,6 @@
     <meta name="theme-color" content="#0b0b0d" />
   </head>
   <body>
-    <!-- Pantalla de carga -->
-    <div class="loading-screen" id="loadingScreen">
-      <div class="loading-content">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">Cargando...</div>
-      </div>
-    </div>
-
     <div class="welcome welcome--hidden" id="welcomeModal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle" aria-describedby="welcomeText">
       <div class="welcome__card">
         <h2 class="welcome__title" id="welcomeTitle">Bienvenid@</h2>
@@ -275,7 +267,7 @@
         </footer>
     </div>
 
-    <audio id="bgAudio" preload="auto" crossorigin="anonymous"></audio>
+    <audio id="bgAudio" preload="auto" crossorigin="anonymous" playsinline webkit-playsinline></audio>
 
     <script src="config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsmediatags@3.9.7/dist/jsmediatags.min.js"></script>

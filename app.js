@@ -66,6 +66,27 @@
     localStorage.setItem(key, JSON.stringify(arr));
   };
 
+  const isIOSDevice = () => /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isAndroidDevice = () => /Android/i.test(navigator.userAgent);
+
+  const buildMapsAppUrl = ({ address, mapsUrl }) => {
+    const q = encodeURIComponent(String(address || "").trim() || "Destino");
+
+    if (isIOSDevice()) {
+      // Prefer Apple Maps (abre app). Si no, cae en Safari.
+      // Usamos esquema maps:// para forzar app cuando sea posible.
+      return `maps://?q=${q}`;
+    }
+
+    if (isAndroidDevice()) {
+      // geo: suele abrir la app de mapas instalada.
+      return `geo:0,0?q=${q}`;
+    }
+
+    // Desktop: dejar el link original (normalmente Google Maps)
+    return mapsUrl || `https://www.google.com/maps/search/?api=1&query=${q}`;
+  };
+
   const postToSheets = async (payload) => {
     const url = cfg.sheets?.webAppUrl;
     if (!url) return { ok: false, skipped: true };
@@ -275,7 +296,27 @@
   if (cfg.venue?.address) $("venueAddress").textContent = cfg.venue.address;
 
   if (cfg.venue?.mapsUrl) {
-    $("mapsLink").href = cfg.venue.mapsUrl;
+    const mapsLink = $("mapsLink");
+    if (mapsLink) {
+      mapsLink.href = cfg.venue.mapsUrl;
+      mapsLink.addEventListener("click", (e) => {
+        // En mobile, abrir app de mapas en lugar de navegador.
+        if (isIOSDevice() || isAndroidDevice()) {
+          e.preventDefault();
+          const appUrl = buildMapsAppUrl({ address: cfg.venue?.address, mapsUrl: cfg.venue?.mapsUrl });
+          // Forzar navegación en la misma pestaña para que el SO capture el esquema.
+          window.location.href = appUrl;
+
+          // Fallback (iOS): si maps:// no está permitido, abrir Apple Maps web.
+          if (isIOSDevice()) {
+            setTimeout(() => {
+              // Si el usuario canceló, igual le damos opción web.
+              window.location.href = `https://maps.apple.com/?q=${encodeURIComponent(String(cfg.venue?.address || "").trim() || "Destino")}`;
+            }, 700);
+          }
+        }
+      });
+    }
     if (cfg.venue?.mapsLinkLabel) {
       $("mapsLink").textContent = cfg.venue.mapsLinkLabel;
     }

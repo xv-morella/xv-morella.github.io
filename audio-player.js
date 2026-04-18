@@ -208,20 +208,12 @@ class AudioPlayer {
       const prevVolume = this.audio.volume;
 
       try {
-        // Crear audio silencioso para desbloquear contexto de audio
-        const silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAAAQAEAAEAfAAAQAQABAAgAZGF0YQAAAAA=');
-        silentAudio.volume = 0;
-        await silentAudio.play();
-
-        // Desbloquear el audio principal sin romper una reproducción en curso
         const wasPlaying = !this.audio.paused;
         this.audio.muted = true;
         this.audio.volume = 0;
+        this.audio.playsInline = true;
         await this.audio.play();
-
-        if (!wasPlaying) {
-          this.audio.pause();
-        }
+        if (!wasPlaying) this.audio.pause();
 
         this.audio.dataset.iosUnlocked = 'true';
         console.log('¡Audio desbloqueado exitosamente');
@@ -520,7 +512,8 @@ class AudioPlayer {
     if (!this.discMedia) return;
 
     this._hasCover = true;
-    const safeUrl = encodeURI(String(imageUrl || '')).replace(/'/g, '%27');
+    const rawUrl = String(imageUrl || '');
+    const safeUrl = rawUrl.startsWith('data:') ? rawUrl : encodeURI(rawUrl).replace(/'/g, '%27');
 
     // Crear imagen para verificar carga
     const img = new Image();
@@ -544,6 +537,12 @@ class AudioPlayer {
       }
     }, 5000);
     
+    if (!safeUrl) {
+      this.coverLoaded = true;
+      this.checkReadyToHideLoading();
+      return;
+    }
+
     img.src = safeUrl;
 
     if (this.discMedia2) {
